@@ -17,7 +17,7 @@
       background-size: 200% 200%;
       animation: bgMove 10s ease infinite;
       padding: 16px;
-      overflow: hidden;
+      overflow-x: hidden;
     }
 
     @keyframes bgMove {
@@ -132,6 +132,26 @@
       transform: translateY(0);
     }
 
+    .video-section {
+      margin-top: 36px;
+    }
+
+    .video-section h2 {
+      color: #fff;
+      font-size: 1.3rem;
+      margin-bottom: 14px;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .video-section video {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+      background: #000;
+      display: block;
+    }
+
     .confetti {
       position: fixed;
       top: -20px;
@@ -241,6 +261,11 @@
     <p class="subtitle">לחצו על הכפתור כדי לקבל הודעה מיוחדת</p>
     <button id="greetBtn">לחץ כאן</button>
     <div id="message"></div>
+
+    <div class="video-section">
+      <h2>איך TinyML הופך שבבים פשוטים למערכות לומדות</h2>
+      <video src="tinyml-video.mp4" controls preload="metadata" playsinline></video>
+    </div>
   </div>
 
   <script>
