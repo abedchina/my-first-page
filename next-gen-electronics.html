@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>הדור הבא באלקטרוניקה</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --ink: #ffffff;
+      --ink-2: rgba(255, 255, 255, 0.82);
+      --ink-3: rgba(255, 255, 255, 0.6);
+      --card: rgba(22, 18, 54, 0.62);
+      --card-2: rgba(255, 255, 255, 0.08);
+      --line: rgba(255, 255, 255, 0.18);
+      --accent: #7ef9ff;
+    }
+
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%) fixed;
+      line-height: 1.6;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
+    .wrap { max-width: 980px; margin: 0 auto; }
+
+    header { text-align: center; padding: 40px 16px 24px; }
+    .back { display: inline-block; margin-bottom: 20px; color: var(--ink-2); text-decoration: none; font-size: 0.95rem; }
+    .back:hover { color: var(--ink); }
+    h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.25; text-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); margin-bottom: 12px; }
+    .lead { color: var(--ink-2); font-size: 1.1rem; max-width: 680px; margin: 0 auto; }
+    .credit { display: inline-block; margin-top: 16px; padding: 6px 18px; border-radius: 50px; background: var(--card); border: 1px solid var(--line); color: var(--ink-2); font-size: 0.95rem; }
+    .credit b { color: var(--ink); }
+
+    nav {
+      position: sticky; top: 8px; z-index: 10;
+      display: flex; gap: 8px; overflow-x: auto;
+      padding: 10px; margin: 16px 0 24px;
+      background: rgba(22, 18, 54, 0.75); backdrop-filter: blur(12px);
+      border: 1px solid var(--line); border-radius: 50px;
+      scrollbar-width: none;
+    }
+    nav::-webkit-scrollbar { display: none; }
+    nav a { flex: none; color: var(--ink-2); text-decoration: none; padding: 6px 14px; border-radius: 50px; font-size: 0.92rem; }
+    nav a:hover { background: var(--card-2); color: var(--ink); }
+
+    section {
+      background: var(--card); backdrop-filter: blur(12px);
+      border: 1px solid var(--line); border-radius: 24px;
+      padding: 32px 28px; margin-bottom: 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+      scroll-margin-top: 80px;
+    }
+    h2 { font-size: 1.55rem; margin-bottom: 8px; }
+    .hint { color: var(--ink-3); font-size: 0.95rem; margin-bottom: 20px; }
+
+    /* וידאו ושמע */
+    .video { width: 100%; border-radius: 16px; border: 1px solid var(--line); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3); background: #000; display: block; margin-top: 16px; }
+    audio { width: 100%; margin-top: 16px; }
+
+    /* מצגת */
+    .viewer { position: relative; margin-top: 16px; border-radius: 16px; overflow: hidden; background: #000; aspect-ratio: 1376 / 768; }
+    .viewer img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .nav-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 44px; height: 44px; border-radius: 50%;
+      border: none; background: rgba(0, 0, 0, 0.55); color: #fff;
+      font-size: 1.4rem; cursor: pointer;
+    }
+    .nav-arrow:hover { background: rgba(0, 0, 0, 0.8); }
+    .nav-arrow.prev { right: 10px; }
+    .nav-arrow.next { left: 10px; }
+    .counter { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.6); padding: 2px 12px; border-radius: 50px; font-size: 0.85rem; }
+    .thumbs { display: flex; gap: 8px; overflow-x: auto; padding: 12px 2px 4px; scrollbar-width: thin; }
+    .thumbs img { flex: none; width: 96px; border-radius: 8px; cursor: pointer; opacity: 0.55; border: 2px solid transparent; transition: opacity 0.2s; }
+    .thumbs img:hover { opacity: 0.85; }
+    .thumbs img.sel { opacity: 1; border-color: var(--accent); }
+
+    footer { text-align: center; color: var(--ink-2); padding: 20px 0 40px; font-size: 0.9rem; }
+
+    @media (max-width: 720px) {
+      section { padding: 24px 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a class="back" href="index.html">→ חזרה לעמוד הראשי</a>
+      <h1>הדור הבא של מגמת האלקטרוניקה</h1>
+      <p class="lead">שילוב בינה מלאכותית וראייה ממוחשבת במערכות IoT סגורות.</p>
+      <div class="credit">מנחה ומוביל ההשתלמות: <b>מיחלייה עבד אלמגיד</b></div>
+    </header>
+
+    <nav>
+      <a href="#video">סרטון</a>
+      <a href="#audio">פודקאסט</a>
+      <a href="#slides">מצגת</a>
+    </nav>
+
+    <!-- סרטון -->
+    <section id="video">
+      <h2>🎬 ראייה ממוחשבת באלקטרוניקה</h2>
+      <p class="hint">צפו בסרטון לפני שמתחילים, או חזרו אליו בסוף.</p>
+      <video class="video" src="computer-vision-video.mp4" controls preload="metadata" playsinline></video>
+    </section>
+
+    <!-- שמע -->
+    <section id="audio">
+      <h2>🎧 למה קוד מושלם נכשל בעולם הפיזי</h2>
+      <p class="hint">פרק האזנה על הפער בין קוד שעובד על המסך לבין מערכת שעובדת במציאות.</p>
+      <audio src="perfect-code-audio.m4a" controls preload="metadata"></audio>
+    </section>
+
+    <!-- מצגת -->
+    <section id="slides">
+      <h2>המצגת המלאה</h2>
+      <p class="hint">דפדפו עם החצים, עם מקשי המקלדת או בלחיצה על תמונה ממוזערת.</p>
+      <div class="viewer">
+        <img id="slideImg" src="next-gen-slides/slide01.jpg" alt="שקף 1">
+        <button class="nav-arrow prev" id="prevSlide" aria-label="השקף הקודם">›</button>
+        <button class="nav-arrow next" id="nextSlide" aria-label="השקף הבא">‹</button>
+        <div class="counter" id="slideCount">1 / 15</div>
+      </div>
+      <div class="thumbs" id="thumbs"></div>
+    </section>
+
+    <footer>מנחה ומוביל ההשתלמות: מיחלייה עבד אלמגיד</footer>
+  </div>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+
+    /* ---------- מצגת ---------- */
+    const N = 15;
+    let cur = 1;
+    const pad = (n) => String(n).padStart(2, "0");
+    const src = (i) => "next-gen-slides/slide" + pad(i) + ".jpg";
+    const thumbs = $("#thumbs");
+    for (let i = 1; i <= N; i++) {
+      const t = document.createElement("img");
+      t.src = src(i);
+      t.alt = "שקף " + i;
+      t.loading = "lazy";
+      t.onclick = () => go(i);
+      thumbs.appendChild(t);
+    }
+    function go(i) {
+      cur = ((i - 1 + N) % N) + 1;
+      $("#slideImg").src = src(cur);
+      $("#slideImg").alt = "שקף " + cur;
+      $("#slideCount").textContent = cur + " / " + N;
+      thumbs.querySelectorAll("img").forEach((t, j) => t.classList.toggle("sel", j === cur - 1));
+      const sel = thumbs.children[cur - 1];
+      thumbs.scrollTo({ left: sel.offsetLeft - thumbs.clientWidth / 2 + sel.clientWidth / 2, behavior: "smooth" });
+    }
+    $("#prevSlide").onclick = () => go(cur - 1);
+    $("#nextSlide").onclick = () => go(cur + 1);
+    document.addEventListener("keydown", (e) => {
+      const r = $("#slides").getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) return;
+      if (e.key === "ArrowLeft") go(cur + 1);
+      if (e.key === "ArrowRight") go(cur - 1);
+    });
+    go(1);
+  </script>
+</body>
+</html>
