@@ -132,6 +132,24 @@
       transform: translateY(0);
     }
 
+    .page-link {
+      display: inline-block;
+      margin-top: 28px;
+      padding: 12px 24px;
+      border-radius: 50px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      font-weight: bold;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .page-link:hover {
+      background: rgba(255, 255, 255, 0.24);
+      transform: translateY(-2px);
+    }
+
     .video-section {
       margin-top: 36px;
     }
@@ -261,6 +279,8 @@
     <p class="subtitle">לחצו על הכפתור כדי לקבל הודעה מיוחדת</p>
     <button id="greetBtn">לחץ כאן</button>
     <div id="message"></div>
+
+    <a class="page-link" href="robot-ai.html">🤖 דף אינטראקטיבי: רובוט AI עם ESP32</a>
 
     <div class="video-section">
       <h2>איך TinyML הופך שבבים פשוטים למערכות לומדות</h2>
