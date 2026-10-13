@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>אלקטרוניקה קוגניטיבית</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --ink: #ffffff;
+      --ink-2: rgba(255, 255, 255, 0.82);
+      --ink-3: rgba(255, 255, 255, 0.6);
+      --card: rgba(22, 18, 54, 0.62);
+      --card-2: rgba(255, 255, 255, 0.08);
+      --line: rgba(255, 255, 255, 0.18);
+      --accent: #7ef9ff;
+      --good: #06d6a0;
+      --warn: #ffd166;
+      --bad: #ef476f;
+    }
+
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%) fixed;
+      line-height: 1.6;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
+    a { color: var(--accent); }
+    .wrap { max-width: 980px; margin: 0 auto; }
+
+    header { text-align: center; padding: 40px 16px 24px; }
+    .back { display: inline-block; margin-bottom: 20px; color: var(--ink-2); text-decoration: none; font-size: 0.95rem; }
+    .back:hover { color: var(--ink); }
+    h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.25; text-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); margin-bottom: 12px; }
+    .lead { color: var(--ink-2); font-size: 1.1rem; max-width: 680px; margin: 0 auto; }
+
+    nav {
+      position: sticky; top: 8px; z-index: 10;
+      display: flex; gap: 8px; overflow-x: auto;
+      padding: 10px; margin: 16px 0 24px;
+      background: rgba(22, 18, 54, 0.75); backdrop-filter: blur(12px);
+      border: 1px solid var(--line); border-radius: 50px;
+      scrollbar-width: none;
+    }
+    nav::-webkit-scrollbar { display: none; }
+    nav a { flex: none; color: var(--ink-2); text-decoration: none; padding: 6px 14px; border-radius: 50px; font-size: 0.92rem; }
+    nav a:hover { background: var(--card-2); color: var(--ink); }
+
+    section {
+      background: var(--card); backdrop-filter: blur(12px);
+      border: 1px solid var(--line); border-radius: 24px;
+      padding: 32px 28px; margin-bottom: 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+      scroll-margin-top: 80px;
+    }
+    h2 { font-size: 1.55rem; margin-bottom: 8px; }
+    h3 { font-size: 1.1rem; margin-bottom: 6px; }
+    .hint { color: var(--ink-3); font-size: 0.95rem; margin-bottom: 20px; }
+    p { color: var(--ink-2); }
+    code, .mono { font-family: Consolas, monospace; direction: ltr; unicode-bidi: embed; }
+
+    .btn {
+      background: var(--card-2); color: var(--ink);
+      border: 1px solid var(--line); border-radius: 50px;
+      padding: 9px 18px; font: inherit; font-size: 0.95rem;
+      cursor: pointer; transition: background 0.2s, transform 0.15s;
+    }
+    .btn:hover { background: rgba(255, 255, 255, 0.16); }
+    .btn:active { transform: scale(0.97); }
+    .btn.on { background: linear-gradient(90deg, #ff6a88, #ff99ac); border-color: transparent; box-shadow: 0 6px 16px rgba(255, 106, 136, 0.4); }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .panel { background: rgba(0, 0, 0, 0.22); border-radius: 16px; padding: 16px 18px; margin-top: 16px; }
+    .panel h3 { color: var(--accent); }
+    .warnbox {
+      margin-top: 14px; padding: 12px 16px; border-radius: 12px;
+      background: rgba(255, 209, 102, 0.14); border: 1px solid rgba(255, 209, 102, 0.5);
+      color: var(--warn); font-weight: bold;
+    }
+    .note { font-size: 0.85rem; color: var(--ink-3); margin-top: 12px; }
+
+    /* וידאו */
+    .video { width: 100%; border-radius: 16px; border: 1px solid var(--line); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3); background: #000; display: block; margin-top: 16px; }
+
+    /* מצגת */
+    .viewer { position: relative; margin-top: 16px; border-radius: 16px; overflow: hidden; background: #000; aspect-ratio: 1376 / 768; }
+    .viewer img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .nav-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 44px; height: 44px; border-radius: 50%;
+      border: none; background: rgba(0, 0, 0, 0.55); color: #fff;
+      font-size: 1.4rem; cursor: pointer;
+    }
+    .nav-arrow:hover { background: rgba(0, 0, 0, 0.8); }
+    .nav-arrow.prev { right: 10px; }
+    .nav-arrow.next { left: 10px; }
+    .counter { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.6); padding: 2px 12px; border-radius: 50px; font-size: 0.85rem; }
+    .thumbs { display: flex; gap: 8px; overflow-x: auto; padding: 12px 2px 4px; scrollbar-width: thin; }
+    .thumbs img { flex: none; width: 96px; border-radius: 8px; cursor: pointer; opacity: 0.55; border: 2px solid transparent; transition: opacity 0.2s; }
+    .thumbs img:hover { opacity: 0.85; }
+    .thumbs img.sel { opacity: 1; border-color: var(--accent); }
+
+    /* השוואה */
+    .compare { display: grid; gap: 10px; margin-top: 16px; }
+    .cmp-row { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: center; background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; }
+    .cmp-row .k { color: var(--ink-3); font-weight: bold; }
+    .cmp-row .v { font-size: 1.05rem; transition: opacity 0.3s; }
+    .cognitive .cmp-row { border-color: rgba(126, 249, 255, 0.5); }
+    .cognitive .cmp-row .v { color: var(--accent); }
+
+    /* משולש */
+    .triangle { position: relative; max-width: 520px; margin: 20px auto 0; aspect-ratio: 1.25; }
+    .triangle svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .node {
+      position: absolute; transform: translate(50%, -50%);
+      width: 132px; padding: 12px 8px; text-align: center;
+      border-radius: 18px; border: 2px solid var(--line);
+      background: rgba(22, 18, 54, 0.9); color: var(--ink);
+      font: inherit; cursor: pointer; transition: border-color 0.2s, transform 0.2s;
+    }
+    .node:hover { transform: translate(50%, -50%) scale(1.05); }
+    .node .ic { font-size: 1.8rem; display: block; }
+    .node b { display: block; }
+    .node.sel { border-color: var(--accent); }
+    .flow-line { stroke: rgba(255, 255, 255, 0.35); stroke-width: 2; fill: none; stroke-dasharray: 6 6; animation: dash 1.2s linear infinite; }
+    @keyframes dash { to { stroke-dashoffset: -12; } }
+    .flow-lbl { fill: var(--ink-2); font-size: 13px; font-family: "Segoe UI", Arial, sans-serif; }
+
+    /* שלבי זרימה */
+    .chain { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 16px; }
+    .chip { background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; font-size: 0.92rem; transition: background 0.3s, border-color 0.3s; }
+    .chip.lit { background: rgba(126, 249, 255, 0.2); border-color: var(--accent); }
+    .arrow { color: var(--ink-3); }
+
+    /* שכבות שרת */
+    .layers { display: grid; gap: 8px; margin-top: 16px; }
+    .layer { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; align-items: center; background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; transition: background 0.3s, border-color 0.3s; }
+    .layer .num { grid-row: span 2; font-family: Consolas, monospace; font-size: 0.8rem; color: var(--ink-3); }
+    .layer .t { font-weight: bold; direction: ltr; text-align: right; }
+    .layer .d { color: var(--ink-2); font-size: 0.92rem; }
+    .layer.lit { background: rgba(240, 147, 251, 0.22); border-color: #f093fb; }
+    .slider label { display: flex; justify-content: space-between; color: var(--ink-2); font-size: 0.95rem; margin-top: 16px; }
+    .slider label b { font-family: Consolas, monospace; color: var(--ink); }
+    input[type="range"] { width: 100%; accent-color: #ff6a88; }
+    pre.json { margin-top: 12px; background: rgba(0, 0, 0, 0.35); border-radius: 12px; padding: 12px 14px; font-family: Consolas, monospace; font-size: 0.9rem; direction: ltr; text-align: left; white-space: pre-wrap; color: var(--accent); }
+
+    /* מחזור */
+    .cycle { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 16px; }
+    .station { background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 8px; text-align: center; transition: background 0.3s, border-color 0.3s; }
+    .station small { display: block; color: var(--ink-3); font-size: 0.78rem; }
+    .station b { display: block; direction: ltr; font-size: 0.92rem; }
+    .station span { display: block; font-size: 0.82rem; color: var(--ink-2); }
+    .station.lit { background: rgba(126, 249, 255, 0.2); border-color: var(--accent); }
+    .timer { font-family: Consolas, monospace; font-size: 2rem; font-weight: bold; color: var(--accent); text-align: center; margin-top: 14px; }
+
+    /* חוקים מול למידה */
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    pre.code { background: rgba(0, 0, 0, 0.35); border-radius: 12px; padding: 14px; font-family: Consolas, monospace; direction: ltr; text-align: left; font-size: 0.95rem; color: #ffd166; }
+    .grid-ex { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .grid-ex span { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 1.6rem; }
+
+    /* איזון מחלקות */
+    .balance { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: end; margin-top: 12px; }
+    .bars { display: flex; gap: 24px; align-items: flex-end; height: 160px; justify-content: center; border-bottom: 1px solid var(--line); }
+    .bar-col { width: 64px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+    .bar-col .bar { width: 100%; background: var(--accent); border-radius: 4px 4px 0 0; transition: height 0.3s; }
+    .bar-col .val { font-family: Consolas, monospace; font-size: 0.85rem; color: var(--ink-2); margin-bottom: 4px; }
+    .bar-names { display: flex; gap: 24px; justify-content: center; }
+    .bar-names span { width: 64px; text-align: center; font-size: 0.85rem; color: var(--ink-2); }
+    .status { margin-top: 12px; font-weight: bold; }
+    .status.ok { color: var(--good); }
+    .status.bad { color: var(--bad); }
+
+    /* אוגמנטציה */
+    .aug { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: center; margin-top: 16px; }
+    .aug-img { position: relative; aspect-ratio: 4 / 3; background: #d9e6f2; border-radius: 16px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    .aug-img .hand { font-size: 6rem; transition: transform 0.4s, filter 0.4s; }
+    .aug-img .noise { position: absolute; inset: 0; opacity: 0; transition: opacity 0.3s; background-image: radial-gradient(#000 1px, transparent 1px); background-size: 7px 7px; }
+    .label-tag { position: absolute; top: 10px; right: 10px; background: rgba(0, 0, 0, 0.7); padding: 2px 12px; border-radius: 50px; font-family: Consolas, monospace; font-size: 0.9rem; }
+
+    /* דחיסה */
+    .cards3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+    .pcard { background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; padding: 14px; text-align: center; cursor: pointer; font: inherit; color: var(--ink); transition: border-color 0.2s; }
+    .pcard b { display: block; font-family: Consolas, monospace; font-size: 1.3rem; }
+    .pcard small { color: var(--ink-3); }
+    .pcard.sel { border-color: var(--accent); background: rgba(126, 249, 255, 0.12); }
+    .meter { height: 10px; background: rgba(255, 255, 255, 0.12); border-radius: 5px; overflow: hidden; margin-top: 6px; }
+    .meter div { height: 100%; background: var(--accent); border-radius: 5px; transition: width 0.4s; }
+    .meter-row { margin-top: 10px; font-size: 0.92rem; color: var(--ink-2); }
+
+    /* Latest frame wins */
+    .lfw { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: center; margin-top: 16px; }
+    .slot { min-height: 70px; border: 2px dashed var(--line); border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; padding: 8px; }
+    .frame { background: #2b6cb0; border-radius: 8px; padding: 6px 10px; font-family: Consolas, monospace; font-size: 0.85rem; animation: pop 0.3s; }
+    .frame.drop { background: var(--bad); }
+    @keyframes pop { from { transform: scale(0.6); opacity: 0; } }
+    .cpu { width: 70px; height: 70px; border-radius: 14px; border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
+    .cpu.busy { animation: pulse 0.8s ease-in-out infinite; }
+    @keyframes pulse { 50% { box-shadow: 0 0 20px rgba(126, 249, 255, 0.7); } }
+    .lfw-cap { text-align: center; font-size: 0.82rem; color: var(--ink-3); margin-top: 4px; }
+    .counters { display: flex; gap: 20px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+    .counters div { text-align: center; }
+    .counters b { display: block; font-size: 1.6rem; font-family: Consolas, monospace; color: var(--accent); }
+
+    /* מגן בטיחות */
+    .shield { display: grid; grid-template-columns: 220px 1fr; gap: 20px; align-items: center; margin-top: 16px; }
+    .rings { position: relative; width: 220px; height: 220px; }
+    .ring { position: absolute; border-radius: 50%; border: 3px solid rgba(126, 249, 255, 0.35); cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; background: none; }
+    .ring.sel, .ring:hover { border-color: var(--accent); box-shadow: 0 0 16px rgba(126, 249, 255, 0.5); }
+    .ring.r3 { inset: 0; }
+    .ring.r2 { inset: 30px; }
+    .ring.r1 { inset: 60px; }
+    .core { position: absolute; inset: 88px; border-radius: 50%; background: #c0392b; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; pointer-events: none; }
+    .story { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+    .story div { background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px; text-align: center; }
+    .story .ic { font-size: 2rem; display: block; }
+
+    /* יישומים */
+    .app-img { width: 100%; border-radius: 14px; display: block; margin-top: 14px; }
+    .roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+    .role { background: var(--card-2); border-radius: 12px; padding: 10px 12px; }
+    .role small { display: block; color: var(--ink-3); font-size: 0.82rem; }
+
+    /* משימה */
+    .progress { height: 10px; background: rgba(255, 255, 255, 0.12); border-radius: 5px; overflow: hidden; margin: 12px 0 18px; }
+    .progress div { height: 100%; width: 0; background: linear-gradient(90deg, #06d6a0, #7ef9ff); transition: width 0.4s; }
+    .tasks { display: grid; gap: 8px; }
+    .task { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; cursor: pointer; }
+    .task input { width: 20px; height: 20px; accent-color: #06d6a0; cursor: pointer; }
+    .task.done { opacity: 0.6; }
+    .task.done b { text-decoration: line-through; }
+    .task span { color: var(--ink-2); }
+    .done-msg { text-align: center; font-size: 1.2rem; font-weight: bold; margin-top: 16px; min-height: 1.6em; }
+
+    .cta { display: inline-block; margin-top: 14px; padding: 10px 20px; border-radius: 50px; background: var(--card-2); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-weight: bold; }
+    .cta:hover { background: rgba(255, 255, 255, 0.16); }
+
+    footer { text-align: center; color: var(--ink-2); padding: 20px 0 40px; font-size: 0.9rem; }
+
+    @media (max-width: 720px) {
+      section { padding: 24px 18px; }
+      .split, .aug, .balance, .shield, .roles { grid-template-columns: 1fr; }
+      .cycle { grid-template-columns: repeat(2, 1fr); }
+      .cards3, .story { grid-template-columns: 1fr; }
+      .rings { margin: 0 auto; }
+      .node { width: 104px; padding: 8px 4px; font-size: 0.85rem; }
+      .node .ic { font-size: 1.4rem; }
+      .lfw { grid-template-columns: 1fr; }
+      .cpu { margin: 0 auto; }
+      .cmp-row { grid-template-columns: 1fr; gap: 2px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a class="back" href="index.html">→ חזרה לעמוד הראשי</a>
+      <h1>מאלקטרוניקה מסורתית למערכות קוגניטיביות</h1>
+      <p class="lead">שילוב בינה מלאכותית, ראייה ממוחשבת ו-IoT בפרויקטי גמר. דף אינטראקטיבי למגמת אלקטרוניקה, מבוסס על המצגת והסרטון.</p>
+    </header>
+
+    <nav>
+      <a href="#video">סרטון</a>
+      <a href="#slides">מצגת</a>
+      <a href="#shift">שינוי התפיסה</a>
+      <a href="#triangle">המשולש</a>
+      <a href="#server">השרת</a>
+      <a href="#pipeline">מחזור</a>
+      <a href="#data">דאטה</a>
+      <a href="#augment">אוגמנטציה</a>
+      <a href="#compress">דחיסה</a>
+      <a href="#latency">זמן תגובה</a>
+      <a href="#safety">בטיחות</a>
+      <a href="#apps">יישומים</a>
+      <a href="#capstone">משימה</a>
+    </nav>
+
+    <!-- סרטון -->
+    <section id="video">
+      <h2>🎬 שילוב AI באלקטרוניקה</h2>
+      <p class="hint">צפו בסרטון לפני שמתחילים, או חזרו אליו בסוף.</p>
+      <video class="video" src="ai-integration-video.mp4" controls preload="metadata" playsinline></video>
+    </section>
+
+    <!-- מצגת -->
+    <section id="slides">
+      <h2>המצגת המלאה</h2>
+      <p class="hint">דפדפו עם החצים, עם מקשי המקלדת או בלחיצה על תמונה ממוזערת.</p>
+      <div class="viewer">
+        <img id="slideImg" src="slides/slide01.jpg" alt="שקף 1">
+        <button class="nav-arrow prev" id="prevSlide" aria-label="השקף הקודם">›</button>
+        <button class="nav-arrow next" id="nextSlide" aria-label="השקף הבא">‹</button>
+        <div class="counter" id="slideCount">1 / 19</div>
+      </div>
+      <div class="thumbs" id="thumbs"></div>
+    </section>
+
+    <!-- שינוי התפיסה -->
+    <section id="shift">
+      <h2>שינוי התפיסה: ממרכיבים להבנה</h2>
+      <p class="hint">חיישן אולטרסוני רואה רק מספר, למשל 45 ס"מ. העולם האמיתי דורש להבין הקשר: תמרור עצור, רמזור אדום, אדם בתנועה. החליפו בין שתי הגישות:</p>
+      <div class="row">
+        <button class="btn on" data-view="classic">אלקטרוניקה קלאסית</button>
+        <button class="btn" data-view="cognitive">אלקטרוניקה קוגניטיבית</button>
+      </div>
+      <div class="compare" id="compare"></div>
+      <div class="split">
+        <div>
+          <h3>חוקים נוקשים</h3>
+          <pre class="code">if distance &lt; 50:
+    turn_left()
+elif distance &gt; 50:
+    move_forward()</pre>
+        </div>
+        <div>
+          <h3>למידה מתוך דוגמאות</h3>
+          <div class="grid-ex" id="examples"></div>
+        </div>
+      </div>
+      <div class="warnbox" style="background:rgba(126,249,255,.1);border-color:rgba(126,249,255,.5);color:var(--accent)">הבינה המלאכותית אינה מתוכנתת, היא מחונכת.</div>
+    </section>
+
+    <!-- משולש -->
+    <section id="triangle">
+      <h2>השילוש הקדוש של מערכת קוגניטיבית</h2>
+      <p class="hint">לחצו על כל רכיב כדי לראות מה התפקיד שלו ומה החומרה.</p>
+      <div class="triangle">
+        <svg viewBox="0 0 500 400" aria-hidden="true">
+          <path class="flow-line" d="M290 95 L395 280" />
+          <path class="flow-line" d="M345 330 L155 330" />
+          <path class="flow-line" d="M105 280 L210 95" />
+          <text class="flow-lbl" x="365" y="175">Video Data</text>
+          <text class="flow-lbl" x="250" y="355" text-anchor="middle">Semantic Commands</text>
+          <text class="flow-lbl" x="75" y="175">Feedback</text>
+        </svg>
+        <button class="node" data-node="eyes" style="right:50%;top:14%"><span class="ic">📷</span><b>העיניים</b>איסוף וידאו</button>
+        <button class="node" data-node="brain" style="right:16%;top:82%"><span class="ic">🧠</span><b>המוח</b>שרת AI</button>
+        <button class="node" data-node="muscles" style="right:84%;top:82%"><span class="ic">⚙️</span><b>השרירים</b>בקרת חומרה</button>
+      </div>
+      <div class="panel" id="nodeInfo"></div>
+    </section>
+
+    <!-- שרת -->
+    <section id="server">
+      <h2>השרת האנליטי: הבנת המציאות בזמן אמת</h2>
+      <p class="hint">קבעו סף ביטחון ושלחו פריים דרך ארבע השכבות. אם הביטחון נמוך מהסף, השרת לא שולח פקודת תנועה.</p>
+      <div class="row">
+        <button class="btn" data-src="esp">📷 ESP32-CAM (HTTP JPEG)</button>
+        <button class="btn" data-src="phone">📱 טלפון (MediaMTX / RTSP)</button>
+      </div>
+      <div class="chain" id="capChain"></div>
+      <div class="layers" id="layers">
+        <div class="layer"><span class="num">Layer 1</span><div class="t">Flask Server</div><div class="d">מקבל פריים תמונה (JPEG) דרך HTTP</div></div>
+        <div class="layer"><span class="num">Layer 2</span><div class="t">OpenCV</div><div class="d">מפענח את התמונה למערך Numpy</div></div>
+        <div class="layer"><span class="num">Layer 3</span><div class="t">YOLO / TFLite Inference</div><div class="d">מפעיל את המודל וחותך לפי סף הביטחון</div></div>
+        <div class="layer"><span class="num">Layer 4</span><div class="t">JSON Payload</div><div class="d">מייצר פקודה להמשך</div></div>
+      </div>
+      <div class="slider">
+        <label for="conf">סף ביטחון <code>CONF_THRESHOLD</code> <b id="confVal">0.70</b></label>
+        <input type="range" id="conf" min="0.3" max="0.95" step="0.05" value="0.7">
+      </div>
+      <div class="row" style="margin-top:12px"><button class="btn on" id="runFrame">▶ שלח פריים</button></div>
+      <pre class="json" id="payload">// לחצו "שלח פריים"</pre>
+    </section>
+
+    <!-- מחזור -->
+    <section id="pipeline">
+      <h2>זרימת הנתונים השלמה (End-to-End)</h2>
+      <p class="hint">חמש תחנות במחזור אחד. היעד: פחות מ-0.5 שניות למחזור שלם. הפעילו מחזור וצפו בזמנים.</p>
+      <div class="cycle" id="cycle"></div>
+      <div class="timer" id="cycleTimer">0 ms</div>
+      <div class="row" style="justify-content:center;margin-top:10px"><button class="btn on" id="runCycle">▶ הפעל מחזור</button></div>
+      <p class="note" id="cycleNote" style="text-align:center">הזמנים בסימולציה הם דוגמה. סך הכל במצגת: כ-400ms.</p>
+    </section>
+
+    <!-- דאטה -->
+    <section id="data">
+      <h2>הדאטה היא המנוע: איסוף ותיוג נתונים</h2>
+      <div class="chain">
+        <span class="chip">1. איסוף: צילום בסביבות אור ורקע משתנות</span><span class="arrow">←</span>
+        <span class="chip">2. תיוג: שרטוט מדויק ב-Roboflow ויצירת <code>data.yaml</code></span><span class="arrow">←</span>
+        <span class="chip">3. איזון: כמות תמונות זהה לכל מחלקה</span>
+      </div>
+      <h3 style="margin-top:22px">נסו בעצמכם: איזון מחלקות</h3>
+      <p class="hint">כמה תמונות אספתם מכל סוג? מערכת מיון אשפה צריכה לזהות פלסטיק וזכוכית באותה רמה.</p>
+      <div class="balance">
+        <div>
+          <div class="slider"><label for="plastic">פלסטיק <b id="plasticVal"></b></label><input type="range" id="plastic" min="0" max="1000" step="10" value="800"></div>
+          <div class="slider"><label for="glass">זכוכית <b id="glassVal"></b></label><input type="range" id="glass" min="0" max="1000" step="10" value="150"></div>
+          <div class="status" id="balStatus"></div>
+        </div>
+        <div>
+          <div class="bars">
+            <div class="bar-col"><span class="val" id="pv"></span><div class="bar" id="pb"></div></div>
+            <div class="bar-col"><span class="val" id="gv"></span><div class="bar" id="gb"></div></div>
+          </div>
+          <div class="bar-names"><span>Plastic</span><span>Glass</span></div>
+        </div>
+      </div>
+      <div class="warnbox">⚠ דאטה לא מאוזן או לא מגוון יוביל למודל עיוור במציאות.</div>
+    </section>
+
+    <!-- אוגמנטציה -->
+    <section id="augment">
+      <h2>הכפלת המציאות (Data Augmentation)</h2>
+      <p class="hint">מהתמונה המקורית יוצרים עוד דוגמאות לאימון. לחצו על כל שינוי ושימו לב לתווית.</p>
+      <div class="aug">
+        <div class="aug-img">
+          <span class="label-tag" id="augLabel">label: left</span>
+          <span class="hand" id="hand">👈</span>
+          <div class="noise" id="noise"></div>
+        </div>
+        <div>
+          <div class="row">
+            <button class="btn on" data-aug="orig">מקור</button>
+            <button class="btn" data-aug="zoom">Zoom</button>
+            <button class="btn" data-aug="dark">Brightness Drop</button>
+            <button class="btn" data-aug="noise">Noise</button>
+            <button class="btn" data-aug="flip">Horizontal Flip</button>
+          </div>
+          <div class="panel" id="augInfo"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- דחיסה -->
+    <section id="compress">
+      <h2>אימון בענן ודחיסה לקצה</h2>
+      <p class="hint">מאמנים את YOLOv8 על GPU בענן (Kaggle או Colab), מייצאים קובץ <code>.pt</code>, ודוחסים כדי שירוץ על מחשבים פשוטים או מעבדי קצה. בחרו רמת דיוק:</p>
+      <div class="cards3" id="precision">
+        <button class="pcard" data-p="0"><b>FP32</b><small>משקל כבד, דיוק מקסימלי</small></button>
+        <button class="pcard" data-p="1"><b>FP16</b><small>משקל בינוני, מאוזן</small></button>
+        <button class="pcard" data-p="2"><b>INT8</b><small>מכומת, אולטרה-מהיר</small></button>
+      </div>
+      <div class="panel" id="precInfo"></div>
+    </section>
+
+    <!-- זמן תגובה -->
+    <section id="latency">
+      <h2>הנדסת מציאות: Latest Frame Wins</h2>
+      <p class="hint">המצלמה שולחת פריימים מהר יותר ממה שהמודל מספיק לעבד. תור בגודל 1 שומר רק את הפריים העדכני וזורק את הישנים. החליפו מצב וצפו בהשהיה.</p>
+      <div class="row">
+        <button class="btn on" data-q="1">תור בגודל 1 (מומלץ)</button>
+        <button class="btn" data-q="inf">תור בלי הגבלה</button>
+        <button class="btn" id="streamBtn">▶ הפעל זרם</button>
+      </div>
+      <div class="lfw">
+        <div><div class="slot" id="queue"></div><div class="lfw-cap">תור הממתינים</div></div>
+        <div><div class="cpu" id="cpu">🧠</div><div class="lfw-cap">המודל</div></div>
+        <div><div class="slot" id="outSlot"></div><div class="lfw-cap">עובד עכשיו על</div></div>
+      </div>
+      <div class="counters">
+        <div><b id="cntIn">0</b>פריימים הגיעו</div>
+        <div><b id="cntDrop">0</b>נזרקו</div>
+        <div><b id="cntLag">0</b>השהיה (פריימים מאחור)</div>
+      </div>
+      <p class="note" style="text-align:center">אל תאגרו פריימים ישנים. המערכת חייבת להגיב למציאות העדכנית ביותר.</p>
+    </section>
+
+    <!-- בטיחות -->
+    <section id="safety">
+      <h2>כשהבינה כושלת: סכנת ה-Stale AI</h2>
+      <div class="story">
+        <div><span class="ic">🚗📶</span>1. ה-AI שולח <code>forward</code> והרכב נוסע</div>
+        <div><span class="ic">📵</span>2. התקשורת נופלת והפקודה האחרונה נשארת</div>
+        <div><span class="ic">💥</span>3. הרכב ממשיך לנסוע עד שהוא מתנגש</div>
+      </div>
+      <div class="warnbox">אובדן תקשורת אינו פקודת עצירה. צריך לתכנן מנגנון אל-כשל (Fail-Safe) חומרתי!</div>
+
+      <h3 style="margin-top:26px">חומת הבטיחות הפיזית (The Safety Shield)</h3>
+      <p class="hint">שלוש שכבות מגינות על המנועים. לחצו על כל טבעת:</p>
+      <div class="shield">
+        <div class="rings">
+          <button class="ring r3" data-ring="0" aria-label="שעון עצר פנימי"></button>
+          <button class="ring r2" data-ring="1" aria-label="מניעת כפילויות"></button>
+          <button class="ring r1" data-ring="2" aria-label="מצב ברירת מחדל"></button>
+          <div class="core">⚙️</div>
+        </div>
+        <div class="panel" id="ringInfo" style="margin-top:0"></div>
+      </div>
+      <a class="cta" href="robot-ai.html#sim">🤖 נסו את סימולטור הבטיחות האינטראקטיבי ←</a>
+    </section>
+
+    <!-- יישומים -->
+    <section id="apps">
+      <h2>יישומים מעשיים</h2>
+      <p class="hint">שלושה פרויקטים, ובכל אחד אותו משולש: עיניים, מוח ושרירים.</p>
+      <div class="row">
+        <button class="btn on" data-app="0">♻️ מיון אשפה חכם</button>
+        <button class="btn" data-app="1">🤖 רובוט מונחה מחוות</button>
+        <button class="btn" data-app="2">🚧 חניון חכם</button>
+      </div>
+      <div class="roles" id="roles"></div>
+      <img class="app-img" id="appImg" src="slides/slide15.jpg" alt="">
+    </section>
+
+    <!-- משימה -->
+    <section id="capstone">
+      <h2>משימת ההשתלמות (The Capstone Challenge)</h2>
+      <p class="hint">התפקיד שלכם כמורים הוא לגשר על הפער: לחבר את המתח, הזרם והחומרה אל האלגוריתמיקה ולמידת המכונה. סמנו כל שלב שהשלמתם. ההתקדמות נשמרת בדפדפן.</p>
+      <div class="progress"><div id="progFill"></div></div>
+      <div class="tasks" id="tasks"></div>
+      <div class="done-msg" id="doneMsg"></div>
+    </section>
+
+    <footer>צאו לדרך. העתיד של מגמת האלקטרוניקה נמצא בידיים שלכם.</footer>
+  </div>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const $$ = (s) => document.querySelectorAll(s);
+    const selectIn = (group, btn) => group.forEach((b) => b.classList.toggle("on", b === btn));
+
+    /* ---------- מצגת ---------- */
+    const N = 19;
+    let cur = 1;
+    const pad = (n) => String(n).padStart(2, "0");
+    const thumbs = $("#thumbs");
+    for (let i = 1; i <= N; i++) {
+      const t = document.createElement("img");
+      t.src = "slides/slide" + pad(i) + ".jpg";
+      t.alt = "שקף " + i;
+      t.loading = "lazy";
+      t.onclick = () => go(i);
+      thumbs.appendChild(t);
+    }
+    function go(i) {
+      cur = ((i - 1 + N) % N) + 1;
+      $("#slideImg").src = "slides/slide" + pad(cur) + ".jpg";
+      $("#slideImg").alt = "שקף " + cur;
+      $("#slideCount").textContent = cur + " / " + N;
+      thumbs.querySelectorAll("img").forEach((t, j) => t.classList.toggle("sel", j === cur - 1));
+      const sel = thumbs.children[cur - 1];
+      thumbs.scrollTo({ left: sel.offsetLeft - thumbs.clientWidth / 2 + sel.clientWidth / 2, behavior: "smooth" });
+    }
+    $("#prevSlide").onclick = () => go(cur - 1);
+    $("#nextSlide").onclick = () => go(cur + 1);
+    document.addEventListener("keydown", (e) => {
+      const r = $("#slides").getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) return;
+      if (e.key === "ArrowLeft") go(cur + 1);
+      if (e.key === "ArrowRight") go(cur - 1);
+    });
+    go(1);
+
+    /* ---------- שינוי התפיסה ---------- */
+    const CMP = [
+      ["לוגיקה", "If/Else קשיח", "מודל TFLite מאומן"],
+      ["חישה", "חיישני מרחק ואור (נתונים חד-ממדיים)", "ראייה ממוחשבת (הבנה סמנטית)"],
+      ["ארכיטקטורה", "עיבוד מקומי ומוגבל (Blink / Motor)", "ארכיטקטורת Edge-PC מבוזרת"],
+      ["פדגוגיה", "התלמיד כמרכיב מעגלים (Circuit Builder)", "התלמיד כארכיטקט מערכות (System Architect)"]
+    ];
+    function renderCmp(view) {
+      const box = $("#compare");
+      box.className = "compare" + (view === "cognitive" ? " cognitive" : "");
+      box.innerHTML = CMP.map((r) => '<div class="cmp-row"><span class="k">' + r[0] + '</span><span class="v">' + (view === "cognitive" ? r[2] : r[1]) + "</span></div>").join("");
+    }
+    const viewBtns = $$("[data-view]");
+    viewBtns.forEach((b) => b.onclick = () => { selectIn(viewBtns, b); renderCmp(b.dataset.view); });
+    renderCmp("classic");
+    const bgs = ["#b9c4d0", "#2d3748", "#8a7f72", "#cfd8dc", "#4a5568", "#a0aec0", "#5a4a3a", "#e2e8f0", "#6b8e9f", "#9fb3c8", "#3c4a5c", "#d6cfc4", "#7a8b99", "#c3b9a8", "#556677", "#e0d6c8"];
+    $("#examples").innerHTML = bgs.map((c) => '<span style="background:' + c + '">👉</span>').join("");
+
+    /* ---------- משולש ---------- */
+    const NODES = {
+      eyes: { t: "📷 העיניים: איסוף וידאו", d: "ESP32-CAM או מצלמת טלפון. אוספים את התמונות מהעולם ושולחים אותן למוח כ-Video Data." },
+      brain: { t: "🧠 המוח: שרת AI בזמן אמת", d: "מחשב שמריץ YOLOv8 ו-Flask. מבין מה רואים בתמונה ומחזיר פקודה סמנטית, למשל forward או left." },
+      muscles: { t: "⚙️ השרירים: בקרת חומרה", d: "ESP32 שמפעיל actuators, מנועים וסרוואים. מבצע את הפקודה בעולם הפיזי." }
+    };
+    function showNode(k) {
+      $$(".node").forEach((n) => n.classList.toggle("sel", n.dataset.node === k));
+      $("#nodeInfo").innerHTML = "<h3>" + NODES[k].t + "</h3><p>" + NODES[k].d + "</p>";
+    }
+    $$(".node").forEach((n) => n.onclick = () => showNode(n.dataset.node));
+    showNode("eyes");
+
+    /* ---------- שרת ---------- */
+    const CAP = {
+      esp: { chain: ["ESP32-CAM module", "HTTP JPEG Stream (/image)", "רשת אלחוטית (Wi-Fi)"], note: "Embedded: דורש משאבי רשת מדויקים" },
+      phone: { chain: ["Smartphone Camera", "Larix Broadcaster", "MediaMTX (RTSP)", "רשת אלחוטית (Wi-Fi)"], note: "Mobile Edge: רזולוציה גבוהה וקלות פריסה" }
+    };
+    const srcBtns = $$("[data-src]");
+    function renderCap(k) {
+      $("#capChain").innerHTML = CAP[k].chain.map((c) => '<span class="chip mono">' + c + "</span>").join('<span class="arrow">←</span>') +
+        '<span class="note" style="margin:0 8px">' + CAP[k].note + "</span>";
+    }
+    srcBtns.forEach((b) => b.onclick = () => { selectIn(srcBtns, b); renderCap(b.dataset.src); });
+    srcBtns[0].classList.add("on");
+    renderCap("esp");
+
+    const conf = $("#conf");
+    conf.oninput = () => $("#confVal").textContent = (+conf.value).toFixed(2);
+    const CLASSES = ["Forward", "Left", "Right", "Stop"];
+    let running = false;
+    $("#runFrame").onclick = async () => {
+      if (running) return;
+      running = true;
+      $("#runFrame").disabled = true;
+      const layers = $$(".layer");
+      for (let i = 0; i < layers.length; i++) {
+        layers.forEach((l, j) => l.classList.toggle("lit", j === i));
+        await new Promise((r) => setTimeout(r, 450));
+      }
+      layers.forEach((l) => l.classList.remove("lit"));
+      const cls = CLASSES[Math.floor(Math.random() * CLASSES.length)];
+      const c = +(0.4 + Math.random() * 0.58).toFixed(2);
+      const th = +conf.value;
+      const pass = c >= th;
+      $("#payload").textContent = pass
+        ? '{ "class": "' + cls + '", "confidence": ' + c + ' }\n// ' + c + ' ≥ ' + th.toFixed(2) + ' → הפקודה נשלחת ל-ESP32'
+        : '{ "class": "Stop", "confidence": ' + c + ' }\n// זוהה ' + cls + ' אבל ' + c + ' < ' + th.toFixed(2) + ' → לא בטוח מספיק, שולחים Stop';
+      running = false;
+      $("#runFrame").disabled = false;
+    };
+
+    /* ---------- מחזור ---------- */
+    const ST = [
+      ["Station 1", "Capture (ESP32)", "cam.capture()", 60],
+      ["Station 2", "Transport Up", "HTTP GET דוחף תמונה", 70],
+      ["Station 3", "Inference (PC/AI)", "YOLOv8 מזהה אובייקט", 180],
+      ["Station 4", "Transport Down", "MQTT/HTTP מחזיר פקודה", 60],
+      ["Station 5", "Actuation (ESP32)", "מפעיל פין GPIO", 30]
+    ];
+    $("#cycle").innerHTML = ST.map((s) => '<div class="station"><small>' + s[0] + "</small><b>" + s[1] + "</b><span>" + s[2] + "</span></div>").join("");
+    let cycling = false;
+    $("#runCycle").onclick = async () => {
+      if (cycling) return;
+      cycling = true;
+      $("#runCycle").disabled = true;
+      const els = $$(".station");
+      let t = 0;
+      for (let i = 0; i < ST.length; i++) {
+        els.forEach((e, j) => e.classList.toggle("lit", j === i));
+        const ms = Math.round(ST[i][3] * (0.8 + Math.random() * 0.5));
+        const start = t;
+        const steps = 10;
+        for (let k = 1; k <= steps; k++) {
+          await new Promise((r) => setTimeout(r, ms / steps * 3));
+          $("#cycleTimer").textContent = Math.round(start + (ms * k) / steps) + " ms";
+        }
+        t += ms;
+      }
+      els.forEach((e) => e.classList.remove("lit"));
+      $("#cycleNote").textContent = t < 500 ? "✓ " + t + "ms: עמדנו ביעד של פחות מ-0.5 שניות" : "✗ " + t + "ms: חרגנו מהיעד. איפה הצוואר בקבוק?";
+      cycling = false;
+      $("#runCycle").disabled = false;
+    };
+
+    /* ---------- איזון מחלקות ---------- */
+    function balance() {
+      const p = +$("#plastic").value, g = +$("#glass").value, max = 1000;
+      $("#plasticVal").textContent = p; $("#glassVal").textContent = g;
+      $("#pv").textContent = p; $("#gv").textContent = g;
+      $("#pb").style.height = (p / max) * 100 + "%";
+      $("#gb").style.height = (g / max) * 100 + "%";
+      const lo = Math.min(p, g), hi = Math.max(p, g);
+      const st = $("#balStatus");
+      if (lo === 0) { st.textContent = "✗ אין בכלל תמונות למחלקה אחת. המודל לא ילמד לזהות אותה."; st.className = "status bad"; }
+      else if (hi / lo > 1.5) { st.textContent = "✗ לא מאוזן (פי " + (hi / lo).toFixed(1) + "). המודל ינחש תמיד את המחלקה הגדולה."; st.className = "status bad"; }
+      else { st.textContent = "✓ מאוזן. אפשר להתחיל לאמן."; st.className = "status ok"; }
+    }
+    $$("#plastic, #glass").forEach((el) => el.oninput = balance);
+    balance();
+
+    /* ---------- אוגמנטציה ---------- */
+    const AUG = {
+      orig: { tr: "none", f: "none", n: 0, lbl: "label: left", t: "תמונת המקור", d: "יד שמצביעה שמאלה, עם התווית left." },
+      zoom: { tr: "scale(1.5)", f: "none", n: 0, lbl: "label: left", t: "✓ Zoom", d: "מלמד את המודל לזהות את המחווה ממרחקים שונים. התווית עדיין נכונה." },
+      dark: { tr: "none", f: "brightness(0.35)", n: 0, lbl: "label: left", t: "✓ Brightness Drop", d: "מדמה תאורה חלשה בכיתה או בערב. התווית עדיין נכונה." },
+      noise: { tr: "none", f: "none", n: 0.35, lbl: "label: left", t: "✓ Noise", d: "מדמה מצלמה זולה או תמונה רועשת. התווית עדיין נכונה." },
+      flip: { tr: "scaleX(-1)", f: "none", n: 0, lbl: "label: left ⚠", t: "⚠ סכנה אדריכלית: Horizontal Flip", d: "היד מצביעה עכשיו ימינה, אבל התווית נשארה left! במחוות כיווניות ההיפוך מלמד את המודל דבר הפוך. מבטלים אותו, או מחליפים את התווית ל-right." }
+    };
+    const augBtns = $$("[data-aug]");
+    function setAug(k) {
+      const a = AUG[k];
+      $("#hand").style.transform = a.tr;
+      $("#hand").style.filter = a.f;
+      $("#noise").style.opacity = a.n;
+      $("#augLabel").textContent = a.lbl;
+      $("#augLabel").style.background = k === "flip" ? "rgba(239,71,111,.9)" : "rgba(0,0,0,.7)";
+      $("#augInfo").innerHTML = "<h3" + (k === "flip" ? ' style="color:var(--warn)"' : "") + ">" + a.t + "</h3><p>" + a.d + "</p>";
+    }
+    augBtns.forEach((b) => b.onclick = () => { selectIn(augBtns, b); setAug(b.dataset.aug); });
+    setAug("orig");
+
+    /* ---------- דחיסה ---------- */
+    const PREC = [
+      { n: "FP32", bytes: 4, t: "דיוק מקסימלי, אבל הקובץ הכי כבד. מתאים לבדיקת בסיס (baseline) במחשב חזק." },
+      { n: "FP16", bytes: 2, t: "חצי מהגודל של FP32 עם דיוק כמעט זהה. בחירה מאוזנת לרוב הפרויקטים." },
+      { n: "INT8", bytes: 1, t: "רבע מהגודל והכי מהיר, אבל דורש כיול (calibration) עם תמונות אמיתיות מהפרויקט. בלי כיול טוב הדיוק עלול לרדת." }
+    ];
+    const pcards = $$(".pcard");
+    function setPrec(i) {
+      pcards.forEach((c, j) => c.classList.toggle("sel", j === i));
+      const p = PREC[i];
+      $("#precInfo").innerHTML = "<h3 class='mono'>" + p.n + "</h3><p>" + p.t + "</p>" +
+        "<div class='meter-row'>גודל קובץ יחסי: " + p.bytes + " בתים לכל משקל</div><div class='meter'><div style='width:" + p.bytes * 25 + "%'></div></div>";
+    }
+    pcards.forEach((c, i) => c.onclick = () => setPrec(i));
+    setPrec(0);
+
+    /* ---------- Latest Frame Wins ---------- */
+    let qMode = "1", streaming = false, frameNo = 0, dropped = 0, busy = null, queue = [], timers = [];
+    const qBtns = $$("[data-q]");
+    qBtns.forEach((b) => b.onclick = () => { selectIn(qBtns, b); qMode = b.dataset.q; resetStream(); });
+    function renderQ() {
+      $("#queue").innerHTML = queue.map((f) => '<span class="frame">#' + f + "</span>").join("");
+      $("#outSlot").innerHTML = busy ? '<span class="frame">#' + busy + "</span>" : "";
+      $("#cpu").classList.toggle("busy", !!busy);
+      $("#cntIn").textContent = frameNo;
+      $("#cntDrop").textContent = dropped;
+      $("#cntLag").textContent = busy ? frameNo - busy : 0;
+    }
+    function arrive() {
+      frameNo++;
+      let old = null;
+      if (qMode === "1" && queue.length) {
+        old = queue.pop();
+        dropped++;
+      }
+      queue.push(frameNo);
+      if (queue.length > 12) queue = queue.slice(-12);
+      if (!busy) process(); else renderQ();
+      if (old !== null) {
+        $("#queue").insertAdjacentHTML("afterbegin", '<span class="frame drop">#' + old + " ✗</span>");
+        setTimeout(renderQ, 400);
+      }
+    }
+    function process() {
+      if (!queue.length) { busy = null; renderQ(); return; }
+      busy = queue.shift();
+      renderQ();
+      timers.push(setTimeout(process, 1500));
+    }
+    function resetStream() {
+      timers.forEach(clearTimeout); timers = [];
+      clearInterval(streamInt);
+      streaming = false; frameNo = 0; dropped = 0; busy = null; queue = [];
+      $("#streamBtn").textContent = "▶ הפעל זרם";
+      $("#streamBtn").classList.remove("on");
+      renderQ();
+    }
+    let streamInt = null;
+    $("#streamBtn").onclick = () => {
+      if (streaming) { resetStream(); return; }
+      streaming = true;
+      $("#streamBtn").textContent = "⏹ עצור";
+      $("#streamBtn").classList.add("on");
+      arrive();
+      streamInt = setInterval(arrive, 600);
+    };
+    renderQ();
+
+    /* ---------- מגן בטיחות ---------- */
+    const RINGS = [
+      { t: "שכבה חיצונית: שעון עצר פנימי (Watchdog / TTL)", d: "אם לא התקבלה פקודה תוך 500ms, ה-ESP32 מפעיל SAFE_STOP אוטומטית, בלי לחכות לשרת." },
+      { t: "שכבה אמצעית: מניעת כפילויות (Sequence IDs)", d: "לכל פקודה יש מספר סידורי. פקודות ישנות או כפולות נחסמות, כדי שהמנוע לא יחזור על תנועה." },
+      { t: "שכבה פנימית: מצב ברירת מחדל (Default State)", d: "בהפעלה מחדש או בחיבור מחדש, המערכת מתחילה תמיד בעצירה מוחלטת." }
+    ];
+    const rings = $$(".ring");
+    function setRing(i) {
+      rings.forEach((r, j) => r.classList.toggle("sel", j === i));
+      $("#ringInfo").innerHTML = "<h3>" + RINGS[i].t + "</h3><p>" + RINGS[i].d + "</p>";
+    }
+    rings.forEach((r, i) => r.onclick = (e) => { e.stopPropagation(); setRing(i); });
+    setRing(0);
+
+    /* ---------- יישומים ---------- */
+    const APPS = [
+      { img: 15, r: [["📷 עיניים", "ESP32-CAM מעל המסוע"], ["🧠 מוח", "זיהוי Plastic מול Glass עם confidence"], ["⚙️ שרירים", "ESP32 מפענח JSON ומזיז זרוע סרוו"]] },
+      { img: 16, r: [["📷 עיניים", "מצלמה שמזהה את מחוות היד"], ["🧠 מוח", "AI Logic מחזיר Command: LEFT"], ["⚙️ שרירים", "מנוע שמאל אחורה, מנוע ימין קדימה (PWM), עם מתג חירום ו-TTL Cutoff"]] },
+      { img: 17, r: [["📷 עיניים", "טלפון משדר RTSP דרך MediaMTX"], ["🧠 מוח", "זיהוי משאית או לוחית רישוי מורשית"], ["⚙️ שרירים", "ESP32 מפעיל ממסר שמרים את המחסום ומדליק נורית"]] }
+    ];
+    const appBtns = $$("[data-app]");
+    function setApp(i) {
+      const a = APPS[i];
+      $("#roles").innerHTML = a.r.map((x) => "<div class='role'><small>" + x[0] + "</small>" + x[1] + "</div>").join("");
+      $("#appImg").src = "slides/slide" + a.img + ".jpg";
+      $("#appImg").alt = "שקף " + a.img;
+    }
+    appBtns.forEach((b, i) => b.onclick = () => { selectIn(appBtns, b); setApp(i); });
+    setApp(0);
+
+    /* ---------- משימה ---------- */
+    const TASKS = [
+      ["איסוף נתונים", "יצירת סט נתונים ייחודי ב-Roboflow וביצוע Data Augmentation"],
+      ["אימון מודל", "אימון מודל YOLO/TFLite בענן ב-Kaggle או Colab"],
+      ["ארכיטקטורת שרת", "הקמת שרת ה-Flask והפעלת זיהוי בזמן אמת"],
+      ["בטיחות ובקרה", "כתיבת קוד ESP32 הכולל מנגנוני TTL ועצירת חירום"],
+      ["שילוב חומרה", "חיבור למנוע או סרוו והדגמת מערכת סגורה (End-to-End)"]
+    ];
+    const KEY = "cognitive-capstone";
+    let done = [];
+    try { done = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { done = []; }
+    function renderTasks() {
+      $("#tasks").innerHTML = TASKS.map((t, i) =>
+        '<label class="task' + (done.includes(i) ? " done" : "") + '"><input type="checkbox" data-i="' + i + '"' + (done.includes(i) ? " checked" : "") + '>' +
+        "<div><b>" + t[0] + ":</b> <span>" + t[1] + "</span></div></label>").join("");
+      $("#progFill").style.width = (done.length / TASKS.length) * 100 + "%";
+      $("#doneMsg").textContent = done.length === TASKS.length ? "🎉 השלמתם את כל המשימה!" : "";
+      $$("#tasks input").forEach((c) => c.onchange = () => {
+        const i = +c.dataset.i;
+        done = c.checked ? done.concat(i) : done.filter((x) => x !== i);
+        try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (e) {}
+        renderTasks();
+      });
+    }
+    renderTasks();
+  </script>
+</body>
+</html>
