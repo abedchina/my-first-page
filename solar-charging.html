@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מתי לטעון מהשמש</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* layout: one column dashboard, recommendation first, details after */
+  :root{
+    color-scheme:dark;
+    --bg:#0a1424; --panel:#101e36; --panel2:#152846; --line:#23395f;
+    --text:#f1f5ff; --muted:#93a4c6;
+    --sun:#ffb21e; --sun2:#ff7a1a; --good:#3ddc97; --ok:#ffd34d; --poor:#5b6b8c;
+    --font:'Rubik',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font)}
+  body{background:
+      radial-gradient(800px 420px at 85% -5%,rgba(255,178,30,.22),transparent 60%),
+      var(--bg)}
+  /* photovoltaic cell texture */
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;opacity:.05;
+    background-image:linear-gradient(#7fb0ff 1px,transparent 1px),linear-gradient(90deg,#7fb0ff 1px,transparent 1px);
+    background-size:26px 26px}
+  .wrap{max-width:1100px;margin:0 auto;padding:22px 16px 48px;position:relative;display:flex;flex-direction:column;gap:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px}
+  h1{margin:0;font-size:28px;font-weight:900;text-wrap:balance}
+  h2{margin:0 0 12px;font-size:18px;font-weight:700}
+  .muted{color:var(--muted)}
+  .mono{font-family:var(--mono)}
+
+  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header .sub{color:var(--muted);font-size:14px;margin-top:2px}
+  header .home{margin-inline-start:auto;color:var(--muted);text-decoration:none;font-size:14px;border:1px solid var(--line);padding:6px 12px;border-radius:10px}
+  select,button,input[type=number]{font-family:inherit;font-size:14px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+  button{cursor:pointer}
+  button:hover,select:hover{border-color:var(--sun)}
+  button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
+
+  /* recommendation */
+  .hero{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;align-items:center;
+    background:linear-gradient(135deg,rgba(255,178,30,.16),rgba(255,122,26,.06)),var(--panel);border-color:rgba(255,178,30,.35)}
+  .hero .label{font-size:13px;letter-spacing:.06em;color:var(--sun);font-weight:700}
+  .hero .window{font-size:46px;font-weight:900;line-height:1.1;margin:6px 0;font-family:var(--mono);direction:ltr;text-align:right}
+  .hero .why{font-size:15px;color:#d8e1f5;line-height:1.6}
+  .pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700}
+  .pill.good{background:rgba(61,220,151,.18);color:var(--good)}
+  .pill.ok{background:rgba(255,211,77,.18);color:var(--ok)}
+  .pill.poor{background:rgba(147,164,198,.18);color:var(--muted)}
+  #sky{width:100%;height:170px}
+
+  .controls{display:flex;gap:14px;flex-wrap:wrap;align-items:end}
+  .controls label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
+  .controls input[type=range]{width:170px;accent-color:var(--sun)}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .stat b{display:block;font-size:24px;font-weight:900;font-variant-numeric:tabular-nums}
+  .stat span{font-size:12px;color:var(--muted)}
+
+  .days{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+  .days button.on{background:var(--sun);color:#1a1200;border-color:var(--sun);font-weight:700}
+  #chart{width:100%;height:260px;display:block}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-inline-end:6px;vertical-align:-2px}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .formula{font-family:var(--mono);direction:ltr;text-align:left;background:#0b1730;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13px;line-height:1.8;overflow-x:auto}
+  .formula em{color:var(--sun);font-style:normal}
+  ul.tips{margin:0;padding-inline-start:20px;line-height:1.8;font-size:14px}
+  pre.code{margin:0;font-family:var(--mono);direction:ltr;text-align:left;background:#0b1730;border:1px solid var(--line);border-radius:12px;padding:14px;font-size:12.5px;line-height:1.6;overflow-x:auto;max-height:420px}
+  .codehead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .codehead button{margin-inline-start:auto}
+  #err{display:none;color:#ffb4b4}
+
+  @media (max-width:820px){
+    .hero,.two{grid-template-columns:1fr}
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .hero .window{font-size:36px}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>☀️ מתי כדאי לטעון מהשמש?</h1>
+      <div class="sub">תחזית קרינת שמש חיה מ-Open-Meteo · מחשבים כמה הפאנל שלך ייצר בכל שעה</div>
+    </div>
+    <a class="home" href="index.html">🏠 לדף הבית</a>
+  </header>
+
+  <section class="card controls">
+    <label>📍 מיקום
+      <select id="city">
+        <option value="31.778,35.235">ירושלים</option>
+        <option value="32.085,34.781">תל אביב</option>
+        <option value="32.794,34.990">חיפה</option>
+        <option value="32.700,35.303" selected>נצרת</option>
+        <option value="32.920,35.290">כרמיאל</option>
+        <option value="32.795,35.531">טבריה</option>
+        <option value="31.252,34.791">באר שבע</option>
+        <option value="29.558,34.952">אילת</option>
+      </select>
+    </label>
+    <button id="geo">🎯 המיקום שלי</button>
+    <label>🔆 הספק הפאנל
+      <select id="panel">
+        <option value="5">5W (פאנל קטן לפרויקט)</option>
+        <option value="10" selected>10W</option>
+        <option value="20">20W</option>
+        <option value="50">50W</option>
+        <option value="100">100W</option>
+      </select>
+    </label>
+    <label>🔋 סוללה
+      <select id="battery">
+        <option value="9.6">18650 אחת (3.7V 2600mAh = 9.6Wh)</option>
+        <option value="14.8" selected>רובוט 2S (7.4V 2000mAh = 14.8Wh)</option>
+        <option value="37">פאוור בנק (10000mAh = 37Wh)</option>
+        <option value="84">עופרת 12V 7Ah = 84Wh</option>
+      </select>
+    </label>
+    <label>מצב טעינה עכשיו: <b id="socVal">30%</b>
+      <input id="soc" type="range" min="0" max="95" step="5" value="30">
+    </label>
+  </section>
+
+  <section class="card hero">
+    <div>
+      <div class="label" id="heroLabel">הזמן הכי טוב לטעון היום</div>
+      <div class="window" id="heroWindow">--:--</div>
+      <div id="heroPill"></div>
+      <p class="why" id="heroWhy">טוען תחזית...</p>
+      <p id="err"></p>
+    </div>
+    <canvas id="sky" aria-label="מסלול השמש היום"></canvas>
+  </section>
+
+  <section class="stats">
+    <div class="stat"><b id="sEnergy">–</b><span>אנרגיה שהפאנל ייצר ביום</span></div>
+    <div class="stat"><b id="sPeak">–</b><span>הספק שיא צפוי</span></div>
+    <div class="stat"><b id="sFull">–</b><span>מתי הסוללה תהיה מלאה</span></div>
+    <div class="stat"><b id="sSun">–</b><span>זריחה · שקיעה</span></div>
+  </section>
+
+  <section class="card">
+    <h2>📊 הספק צפוי לפי שעה</h2>
+    <div class="days" id="days"></div>
+    <canvas id="chart" aria-label="גרף הספק לפי שעה"></canvas>
+    <div class="legend">
+      <span><i style="background:var(--good)"></i>מצוין לטעינה (70%+ מהשיא)</span>
+      <span><i style="background:var(--ok)"></i>סביר</span>
+      <span><i style="background:var(--poor)"></i>חלש</span>
+      <span><i style="background:#fff;height:2px;vertical-align:3px"></i>עכשיו</span>
+      <span>☁️ = עננות (%)</span>
+    </div>
+  </section>
+
+  <section class="two">
+    <div class="card">
+      <h2>🧮 איך מחשבים? (שעת השיא)</h2>
+      <div class="formula" id="formula">...</div>
+      <ul class="tips">
+        <li><b>קרינה (W/m²):</b> בשמש מלאה בצהריים מגיעים לכ-1000 W/m², ואז הפאנל מוציא בערך את ההספק הרשום עליו.</li>
+        <li><b>חום מוריד הספק:</b> כל מעלה מעל 25°C בתא הסולארי מורידה כ-0.4% מההספק.</li>
+        <li><b>הפסדים:</b> בקר טעינה, חוטים ואבק מורידים עוד כ-15%.</li>
+        <li><b>טיפ:</b> כוונו את הפאנל לדרום, בזווית קרובה לקו הרוחב (בישראל כ-30°–32°).</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="codehead"><h2 style="margin:0">💻 קוד ל-ESP32: טעינה חכמה</h2><button id="copy">📋 העתק</button></div>
+      <pre class="code" id="code"></pre>
+    </div>
+  </section>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const LOSSES = 0.85, TEMP_COEF = -0.004, CHARGE_EFF = 0.85;
+let data = null, dayIdx = 0, cur = [0, 0];
+
+const hhmm = d => d.toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit', hour12:false});
+const dayName = (d, i) => i === 0 ? 'היום' : i === 1 ? 'מחר' : d.toLocaleDateString('he-IL', {weekday:'long'});
+
+// panel output for one hour: Wp × G/1000 × temperature factor × losses
+function power(wp, ghi, airT){
+  const cellT = airT + ghi / 800 * 20;
+  const tempF = 1 + TEMP_COEF * (cellT - 25);
+  return Math.max(0, wp * ghi / 1000 * tempF * LOSSES);
+}
+
+async function load(lat, lon){
+  cur = [lat, lon];
+  $('heroWhy').textContent = 'טוען תחזית...';
+  $('err').style.display = 'none';
+  try{
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&hourly=temperature_2m,cloud_cover,shortwave_radiation&daily=sunrise,sunset&timezone=auto&forecast_days=3`;
+    const j = await (await fetch(url)).json();
+    // shortwave_radiation at time T is the average of the hour that ENDS at T
+    const hours = j.hourly.time.map((t, i) => ({
+      start: new Date(new Date(t).getTime() - 3600e3),
+      ghi: j.hourly.shortwave_radiation[i], temp: j.hourly.temperature_2m[i], cloud: j.hourly.cloud_cover[i]
+    }));
+    data = {
+      days: j.daily.time.map((d, i) => ({
+        date: new Date(d), sunrise: new Date(j.daily.sunrise[i]), sunset: new Date(j.daily.sunset[i]),
+        hours: hours.filter(h => h.start.toDateString() === new Date(j.daily.sunrise[i]).toDateString())
+      }))
+    };
+    $('days').innerHTML = '';
+    data.days.forEach((d, i) => {
+      const b = document.createElement('button');
+      b.textContent = dayName(d.sunrise, i);
+      b.onclick = () => { dayIdx = i; render(); };
+      $('days').appendChild(b);
+    });
+    render();
+  }catch(e){
+    $('err').style.display = 'block';
+    $('err').textContent = '⚠️ לא הצלחתי לטעון את התחזית. בדוק את החיבור לאינטרנט ונסה שוב.';
+    $('heroWhy').textContent = '';
+  }
+}
+
+function analyze(day, isToday){
+  const wp = +$('panel').value;
+  const hrs = day.hours.map(h => ({...h, p: power(wp, h.ghi, h.temp)}));
+  const peak = Math.max(...hrs.map(h => h.p));
+  hrs.forEach(h => h.q = peak > 0 && h.p >= peak * .7 ? 'good' : peak > 0 && h.p >= peak * .35 ? 'ok' : 'poor');
+  // best window = the contiguous "good" block around the peak hour
+  const pi = hrs.findIndex(h => h.p === peak);
+  let a = pi, b = pi;
+  while (a > 0 && hrs[a - 1].q === 'good') a--;
+  while (b < hrs.length - 1 && hrs[b + 1].q === 'good') b++;
+  const energy = hrs.reduce((s, h) => s + h.p, 0);
+
+  // simulate charging from now (today) or from sunrise (other days)
+  const cap = +$('battery').value;
+  let need = cap * (1 - $('soc').value / 100) / CHARGE_EFF, full = null;
+  const now = new Date();
+  for (const h of hrs){
+    const end = new Date(h.start.getTime() + 3600e3);
+    if (isToday && end <= now) continue;
+    const frac = isToday && h.start < now ? (end - now) / 3600e3 : 1;
+    const got = h.p * frac;
+    if (got >= need && got > 0){ full = new Date(end.getTime() - (1 - need / got) * 3600e3); need = 0; break; }
+    need -= got;
+  }
+  const reachSoc = Math.min(100, 100 - need * CHARGE_EFF / cap * 100);
+  return { hrs, peak, pi, a, b, energy, full, reachSoc, cloudAvg: hrs.slice(a, b + 1).reduce((s, h) => s + h.cloud, 0) / (b - a + 1) };
+}
+
+function render(){
+  if (!data) return;
+  [...$('days').children].forEach((b, i) => b.classList.toggle('on', i === dayIdx));
+  const day = data.days[dayIdx], isToday = dayIdx === 0;
+  const r = analyze(day, isToday), wp = +$('panel').value;
+  const ws = r.hrs[r.a].start, we = new Date(r.hrs[r.b].start.getTime() + 3600e3);
+
+  $('heroLabel').textContent = `הזמן הכי טוב לטעון ${dayName(day.sunrise, dayIdx)}`;
+  $('heroWindow').textContent = r.peak > 0.05 ? `${hhmm(ws)}–${hhmm(we)}` : 'אין שמש';
+  const rel = r.peak / wp;
+  const [cls, txt] = rel > .6 ? ['good', '☀️ יום מצוין לטעינה'] : rel > .3 ? ['ok', '⛅ יום בינוני, עננות חלקית'] : ['poor', '☁️ יום חלש, הרבה עננים'];
+  $('heroPill').innerHTML = `<span class="pill ${cls}">${txt}</span>`;
+  let why = `בשעות האלה הפאנל של ${wp}W יפיק עד <b>${r.peak.toFixed(1)}W</b> (עננות ממוצעת ${Math.round(r.cloudAvg)}%). `;
+  if (isToday && new Date() > we) why += 'חלון השיא של היום כבר עבר. כדאי לבדוק את מחר. ';
+  why += r.full ? `סוללה של ${$('battery').value}Wh מ-${$('soc').value}% תהיה מלאה בערך ב-<b>${hhmm(r.full)}</b>.`
+               : `הסוללה לא תתמלא ${isToday ? 'היום' : 'ביום הזה'}, תגיע לכ-<b>${Math.round(r.reachSoc)}%</b>. כדאי פאנל גדול יותר או יום נוסף.`;
+  $('heroWhy').innerHTML = why;
+
+  $('sEnergy').textContent = r.energy.toFixed(0) + ' Wh';
+  $('sPeak').textContent = r.peak.toFixed(1) + ' W';
+  $('sFull').textContent = r.full ? hhmm(r.full) : Math.round(r.reachSoc) + '%';
+  $('sSun').textContent = `${hhmm(day.sunrise)} · ${hhmm(day.sunset)}`;
+
+  const h = r.hrs[r.pi], cellT = h.temp + h.ghi / 800 * 20;
+  $('formula').innerHTML =
+    `G = <em>${h.ghi.toFixed(0)}</em> W/m²   T_air = <em>${h.temp.toFixed(1)}</em>°C   clouds = <em>${h.cloud}</em>%<br>` +
+    `T_cell ≈ T_air + G/800×20 = <em>${cellT.toFixed(1)}</em>°C<br>` +
+    `P = Wp × G/1000 × (1 − 0.004×(T_cell−25)) × 0.85<br>` +
+    `P = ${wp} × ${(h.ghi / 1000).toFixed(2)} × ${(1 + TEMP_COEF * (cellT - 25)).toFixed(3)} × 0.85 = <em>${r.peak.toFixed(2)} W</em>`;
+
+  drawChart(r, isToday);
+  drawSky(day, isToday);
+  updateCode(r);
+}
+
+function sizeCanvas(c){
+  const dpr = devicePixelRatio || 1;
+  c.width = c.clientWidth * dpr; c.height = c.clientHeight * dpr;
+  const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return [g, c.clientWidth, c.clientHeight];
+}
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function drawChart(r, isToday){
+  const [g, W, H] = sizeCanvas($('chart'));
+  const hrs = r.hrs.filter(h => h.start.getHours() >= 5 && h.start.getHours() <= 19);
+  const padL = 44, padR = 10, padT = 26, padB = 30;
+  const max = Math.max(+$('panel').value * .9, r.peak) * 1.1;
+  const bw = (W - padL - padR) / hrs.length;
+  const Y = v => H - padB - v / max * (H - padT - padB);
+  g.font = '11px JetBrains Mono, monospace'; g.textAlign = 'right';
+  for (let i = 0; i <= 4; i++){
+    const v = max * i / 4;
+    g.strokeStyle = 'rgba(147,164,198,.15)'; g.beginPath(); g.moveTo(padL, Y(v)); g.lineTo(W - padR, Y(v)); g.stroke();
+    g.fillStyle = css('--muted'); g.fillText(v.toFixed(v < 10 ? 1 : 0) + 'W', padL - 6, Y(v) + 4);
+  }
+  // best window highlight
+  const ai = hrs.indexOf(r.hrs[r.a]), bi = hrs.indexOf(r.hrs[r.b]);
+  if (ai >= 0 && r.peak > .05){
+    g.fillStyle = 'rgba(61,220,151,.08)';
+    g.fillRect(padL + ai * bw, padT - 18, (bi - ai + 1) * bw, H - padT - padB + 18);
+  }
+  const col = {good: css('--good'), ok: css('--ok'), poor: css('--poor')};
+  g.textAlign = 'center';
+  hrs.forEach((h, i) => {
+    const x = padL + i * bw;
+    g.fillStyle = col[h.q];
+    const y = Y(h.p);
+    g.beginPath(); g.roundRect(x + bw * .15, y, bw * .7, H - padB - y, [4, 4, 0, 0]); g.fill();
+    g.fillStyle = css('--muted');
+    if (i % 2 === 0 || bw > 40) g.fillText(String(h.start.getHours()).padStart(2, '0') + ':00', x + bw / 2, H - 10);
+    if (h.cloud >= 40) g.fillText('☁️' + (bw > 34 ? h.cloud : ''), x + bw / 2, padT - 6);
+  });
+  if (isToday){
+    const now = new Date(), i0 = hrs[0].start.getTime();
+    const x = padL + (now - i0) / 3600e3 * bw;
+    if (x > padL && x < W - padR){
+      g.strokeStyle = '#fff'; g.lineWidth = 2; g.setLineDash([4, 4]);
+      g.beginPath(); g.moveTo(x, padT - 18); g.lineTo(x, H - padB); g.stroke(); g.setLineDash([]); g.lineWidth = 1;
+    }
+  }
+}
+
+function drawSky(day, isToday){
+  const [g, W, H] = sizeCanvas($('sky'));
+  const cx = W / 2, base = H - 22, rad = Math.min(W / 2 - 20, H - 40);
+  g.strokeStyle = 'rgba(255,178,30,.35)'; g.setLineDash([5, 6]); g.lineWidth = 2;
+  g.beginPath(); g.arc(cx, base, rad, Math.PI, 0); g.stroke(); g.setLineDash([]);
+  g.strokeStyle = 'rgba(147,164,198,.4)'; g.beginPath(); g.moveTo(10, base); g.lineTo(W - 10, base); g.stroke();
+  g.fillStyle = css('--muted'); g.font = '12px Rubik, sans-serif'; g.textAlign = 'center';
+  // RTL page, but the sky follows the real sun: east on the right, west on the left
+  g.fillText('זריחה ' + hhmm(day.sunrise), cx + rad, base + 16);
+  g.fillText('שקיעה ' + hhmm(day.sunset), cx - rad, base + 16);
+  let t = isToday ? (Date.now() - day.sunrise) / (day.sunset - day.sunrise) : .5;
+  const up = t >= 0 && t <= 1;
+  t = Math.min(1, Math.max(0, t));
+  const ang = Math.PI * t;               // 0 = east (right), PI = west (left)
+  const x = cx + rad * Math.cos(ang), y = base - rad * Math.sin(ang);
+  const glow = g.createRadialGradient(x, y, 2, x, y, 34);
+  glow.addColorStop(0, up ? 'rgba(255,200,60,.9)' : 'rgba(147,164,198,.5)'); glow.addColorStop(1, 'rgba(255,178,30,0)');
+  g.fillStyle = glow; g.beginPath(); g.arc(x, y, 34, 0, Math.PI * 2); g.fill();
+  g.fillStyle = up ? css('--sun') : css('--poor'); g.beginPath(); g.arc(x, y, 12, 0, Math.PI * 2); g.fill();
+  g.fillStyle = css('--text'); g.font = '13px Rubik, sans-serif';
+  g.fillText(isToday ? (up ? 'השמש עכשיו' : 'השמש מתחת לאופק') : 'צהריים', cx, base - 8);
+}
+
+function updateCode(r){
+  const ws = r.hrs[r.a].start.getHours(), we = r.hrs[r.b].start.getHours() + 1;
+  const [lat, lon] = cur;
+  $('code').textContent =
+`// ESP32: turns on charging only during the best solar hours
+// reads the forecast from Open-Meteo (free, no key) every hour
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include "time.h"
+
+const char* SSID = "your-wifi";
+const char* PASS = "your-password";
+const int RELAY_PIN = 26;      // relay that connects the panel to the charger
+const int PANEL_ADC = 34;      // panel voltage via divider 100k/10k
+int bestStart = ${ws}, bestEnd = ${we};   // today's window from this page
+
+String url = "https://api.open-meteo.com/v1/forecast?latitude=${lat}"
+             "&longitude=${lon}&hourly=shortwave_radiation&timezone=auto&forecast_days=1";
+
+void updateWindow() {
+  HTTPClient http;
+  http.begin(url);
+  if (http.GET() != 200) return;
+  JsonDocument doc;
+  deserializeJson(doc, http.getString());
+  JsonArray g = doc["hourly"]["shortwave_radiation"];
+  float peak = 0;
+  for (float v : g) peak = max(peak, v);
+  bestStart = -1;
+  for (int h = 0; h < 24; h++) {          // hours with 70%+ of the peak
+    if (g[h].as<float>() >= peak * 0.7) {
+      if (bestStart < 0) bestStart = h - 1;
+      bestEnd = h;
+    }
+  }
+  http.end();
+}
+
+float panelVolts() {
+  return analogRead(PANEL_ADC) / 4095.0 * 3.3 * (110.0 / 10.0);
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(RELAY_PIN, OUTPUT);
+  WiFi.begin(SSID, PASS);
+  while (WiFi.status() != WL_CONNECTED) delay(500);
+  configTzTime("IST-2IDT,M3.4.4/26,M10.5.0", "pool.ntp.org");
+  updateWindow();
+}
+
+void loop() {
+  struct tm now;
+  getLocalTime(&now);
+  if (now.tm_min == 0) updateWindow();
+  bool inWindow = now.tm_hour >= bestStart && now.tm_hour < bestEnd;
+  bool sunny = panelVolts() > 5.0;         // real check: is there light now?
+  digitalWrite(RELAY_PIN, inWindow && sunny);
+  Serial.printf("%02d:%02d  panel=%.1fV  window=%d-%d  charging=%s\\n",
+    now.tm_hour, now.tm_min, panelVolts(), bestStart, bestEnd,
+    inWindow && sunny ? "ON" : "OFF");
+  delay(60000);
+}`;
+}
+
+$('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText($('code').textContent); $('copy').textContent = '✅ הועתק'; }
+  catch { getSelection().selectAllChildren($('code')); $('copy').textContent = 'סמן והעתק ידנית'; }
+  setTimeout(() => $('copy').textContent = '📋 העתק', 2000);
+};
+$('soc').oninput = () => { $('socVal').textContent = $('soc').value + '%'; render(); };
+['panel', 'battery'].forEach(id => $(id).onchange = render);
+$('city').onchange = () => { const [a, b] = $('city').value.split(','); load(a, b); };
+$('geo').onclick = () => {
+  if (!navigator.geolocation){ $('geo').textContent = '🎯 לא נתמך'; return; }
+  navigator.geolocation.getCurrentPosition(
+    p => { $('geo').textContent = '🎯 המיקום שלי ✓'; load(p.coords.latitude.toFixed(3), p.coords.longitude.toFixed(3)); },
+    () => { $('geo').textContent = '🎯 אין הרשאה'; });
+};
+addEventListener('resize', render);
+const [la, lo] = $('city').value.split(',');
+load(la, lo);
+setInterval(render, 5 * 60e3); // keep the "now" marker moving
+</script>
+</body>
+</html>
