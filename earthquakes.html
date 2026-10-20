@@ -5,218 +5,264 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>מפת רעידות אדמה</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;800;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0b1020; --panel:#121a33; --panel2:#18224a; --text:#e8ecff; --muted:#93a0c8;
-    --red:#ff3b3b; --orange:#ff9f1c; --yellow:#ffd23f; --green:#2ec4b6; --border:#26315f;
+    --glass:rgba(10,16,38,.55); --glass2:rgba(255,255,255,.07); --border:rgba(255,255,255,.14);
+    --text:#eef2ff; --muted:#9aa6cf; --red:#ff3b3b; --red2:#ff7a59; --yellow:#ffd23f;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:'Heebo',system-ui,sans-serif}
-  body{display:flex;flex-direction:column}
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;color:var(--text);font-family:'Heebo',system-ui,sans-serif}
+  #globe{position:fixed;inset:0}
 
-  header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:12px 18px;
-    background:linear-gradient(90deg,#1a0f2e,#0f1a3d);border-bottom:1px solid var(--border)}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px}
-  .pulse{width:14px;height:14px;border-radius:50%;background:var(--red);box-shadow:0 0 0 0 rgba(255,59,59,.7);animation:pulse 1.6s infinite}
-  @keyframes pulse{70%{box-shadow:0 0 0 14px rgba(255,59,59,0)}100%{box-shadow:0 0 0 0 rgba(255,59,59,0)}}
-  .stats{display:flex;gap:10px;flex-wrap:wrap;margin-inline-start:auto}
-  .stat{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:12px;padding:6px 14px;min-width:110px;text-align:center}
-  .stat b{display:block;font-size:24px;line-height:1.1}
-  .stat span{font-size:12px;color:var(--muted)}
-  .stat.big b{color:var(--red);font-size:30px}
+  .glass{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,.45)}
 
-  .controls{display:flex;gap:8px;flex-wrap:wrap;padding:10px 18px;background:var(--panel);border-bottom:1px solid var(--border);align-items:center}
-  .controls label{font-size:13px;color:var(--muted)}
-  select,button{font-family:inherit;font-size:14px;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer}
-  button:hover,select:hover{border-color:#4b5cab}
-  #updated{font-size:12px;color:var(--muted);margin-inline-start:auto}
+  /* top bar */
+  header{position:fixed;top:16px;left:16px;right:16px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:12px 20px;z-index:5}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand h1{margin:0;font-size:22px;font-weight:900;letter-spacing:.3px}
+  .brand small{display:block;font-size:12px;color:var(--muted);font-weight:400}
+  .pulse{width:14px;height:14px;border-radius:50%;background:var(--red);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,59,59,.8)}70%{box-shadow:0 0 0 16px rgba(255,59,59,0)}100%{box-shadow:0 0 0 0 rgba(255,59,59,0)}}
 
-  main{flex:1;display:flex;min-height:0}
-  #list{width:340px;background:var(--panel);border-inline-end:1px solid var(--border);overflow-y:auto;order:0}
-  #map{flex:1;order:1}
-  #list h2{margin:0;padding:14px 16px;font-size:16px;position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--border);z-index:1}
-  .item{display:flex;gap:12px;align-items:center;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;transition:background .15s}
-  .item:hover{background:var(--panel2)}
-  .item.new{animation:flash 2s}
-  @keyframes flash{from{background:rgba(255,59,59,.35)}to{background:transparent}}
-  .mag{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:18px;color:#fff}
-  .info{min-width:0}
+  .stats{display:flex;gap:10px;margin-inline-start:auto}
+  .stat{background:var(--glass2);border:1px solid var(--border);border-radius:14px;padding:6px 16px;text-align:center;min-width:96px}
+  .stat b{display:block;font-size:26px;font-weight:900;line-height:1.1}
+  .stat span{font-size:11px;color:var(--muted)}
+  .stat.hot{background:linear-gradient(135deg,rgba(255,59,59,.35),rgba(255,122,89,.15));border-color:rgba(255,90,90,.5)}
+  .stat.hot b{font-size:34px;color:#fff;text-shadow:0 0 18px rgba(255,59,59,.9)}
+
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  select,button{font-family:inherit;font-size:13px;background:var(--glass2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer;transition:.2s}
+  select option{background:#111836}
+  button:hover,select:hover{background:rgba(255,255,255,.16)}
+  button.on{background:rgba(255,59,59,.35);border-color:rgba(255,90,90,.6)}
+
+  /* alert panel on the right */
+  #panel{position:fixed;top:120px;right:16px;bottom:16px;width:350px;display:flex;flex-direction:column;z-index:5;overflow:hidden}
+  #panel h2{margin:0;padding:16px 18px 10px;font-size:17px;display:flex;align-items:center;gap:8px}
+  #panel h2 .count{margin-inline-start:auto;font-size:12px;background:var(--red);border-radius:20px;padding:2px 10px}
+  #updated{font-size:11px;color:var(--muted);padding:0 18px 10px;border-bottom:1px solid var(--border)}
+  #items{overflow-y:auto;flex:1;padding:8px}
+  #items::-webkit-scrollbar{width:6px}
+  #items::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:3px}
+  .item{display:flex;gap:12px;align-items:center;padding:10px;border-radius:14px;cursor:pointer;transition:.2s;margin-bottom:4px}
+  .item:hover,.item.sel{background:rgba(255,255,255,.1)}
+  .item.new{animation:flash 2.5s}
+  @keyframes flash{from{background:rgba(255,59,59,.45)}to{background:transparent}}
+  .mag{flex:none;width:50px;height:50px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:18px;color:#fff;box-shadow:0 0 14px rgba(255,59,59,.55)}
+  .info{min-width:0;flex:1}
   .place{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr;text-align:right}
-  .meta{font-size:12px;color:var(--muted)}
+  .meta{font-size:12px;color:var(--muted);margin-top:2px}
   .tsunami{color:var(--yellow);font-weight:600}
 
-  .mag-label{background:transparent;border:none;box-shadow:none;color:#fff;font-weight:800;font-size:13px;text-shadow:0 0 4px #000,0 0 2px #000}
-  .mag-label::before{display:none}
-  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel2);color:var(--text)}
-  .leaflet-popup-content{font-family:'Heebo',sans-serif;direction:rtl;text-align:right}
-  .leaflet-popup-content a{color:#7fb3ff}
-  .legend{background:rgba(18,26,51,.9);padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.8;color:var(--text);direction:rtl}
-  .legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-inline-end:6px;vertical-align:middle}
+  /* magnitude label above each quake on the globe */
+  .lbl{transform:translate(-50%,-100%);pointer-events:auto;cursor:pointer;background:rgba(255,40,40,.9);color:#fff;font-weight:900;font-size:12px;padding:2px 7px;border-radius:8px;white-space:nowrap;box-shadow:0 0 12px rgba(255,40,40,.8);position:relative;margin-top:-6px}
+  .lbl::after{content:'';position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);border:5px solid transparent;border-bottom:0;border-top-color:rgba(255,40,40,.9)}
+  .lbl.big{font-size:15px;padding:3px 9px}
 
-  #loading{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:9999;font-size:18px}
-  #loading.hide{display:none}
+  /* details card */
+  #card{position:fixed;left:16px;bottom:16px;width:320px;padding:18px;z-index:5;display:none}
+  #card.show{display:block;animation:up .35s}
+  @keyframes up{from{opacity:0;transform:translateY(20px)}}
+  #card .big{font-size:46px;font-weight:900;color:#fff;text-shadow:0 0 24px rgba(255,59,59,.9);line-height:1}
+  #card .place{font-size:16px;margin:8px 0;white-space:normal}
+  #card .row{font-size:13px;color:var(--muted);margin:4px 0}
+  #card a{color:#8fc1ff;font-size:13px}
+  #card .x{position:absolute;top:10px;left:12px;background:none;border:none;font-size:18px;padding:4px}
 
-  @media (max-width:760px){
-    main{flex-direction:column}
-    #map{height:55vh;flex:none}
-    #list{width:100%;order:2;flex:1}
+  .scene-tooltip{font-family:'Heebo',sans-serif!important;direction:rtl}
+  #loading{position:fixed;inset:0;display:grid;place-items:center;background:#000;z-index:99;font-size:20px;transition:opacity .6s}
+  #loading.hide{opacity:0;pointer-events:none}
+
+  @media (max-width:800px){
+    header{top:8px;left:8px;right:8px;padding:10px 12px;gap:10px}
+    .brand h1{font-size:17px}
     .stats{margin-inline-start:0;width:100%}
-    .stat{flex:1;min-width:0}
+    .stat{flex:1;min-width:0;padding:4px 6px}
+    .stat b{font-size:20px}.stat.hot b{font-size:24px}
+    #panel{top:auto;left:8px;right:8px;bottom:8px;width:auto;height:36vh}
+    #card{left:8px;right:8px;width:auto;bottom:calc(36vh + 16px)}
   }
 </style>
 </head>
 <body>
-<div id="loading">⏳ טוען נתוני רעידות אדמה...</div>
+<div id="loading">🌍 טוען את כדור הארץ...</div>
+<div id="globe"></div>
 
-<header>
-  <div class="brand"><div class="pulse"></div> מפת רעידות אדמה בזמן אמת</div>
+<header class="glass">
+  <div class="brand"><div class="pulse"></div><div><h1>רעידות אדמה בזמן אמת</h1><small>נתונים חיים מ-USGS · מתעדכן כל דקה</small></div></div>
+  <div class="controls">
+    <select id="period">
+      <option value="hour">שעה אחרונה</option>
+      <option value="day" selected>24 שעות</option>
+      <option value="week">שבוע אחרון</option>
+    </select>
+    <select id="minmag">
+      <option value="all">כל העוצמות</option>
+      <option value="2.5" selected>עוצמה 2.5+</option>
+      <option value="4.5">עוצמה 4.5+</option>
+      <option value="significant">משמעותיות בלבד</option>
+    </select>
+    <button id="israel">🇮🇱 ישראל</button>
+    <button id="spin" class="on">🔄 סיבוב</button>
+  </div>
   <div class="stats">
-    <div class="stat big"><b id="sLast">–</b><span>עוצמה – רעידה אחרונה</span></div>
+    <div class="stat hot"><b id="sLast">–</b><span>עוצמה אחרונה</span></div>
     <div class="stat"><b id="sMax">–</b><span>החזקה ביותר</span></div>
-    <div class="stat"><b id="sCount">–</b><span>מספר רעידות</span></div>
+    <div class="stat"><b id="sCount">–</b><span>רעידות</span></div>
   </div>
 </header>
 
-<div class="controls">
-  <label>טווח זמן:</label>
-  <select id="period">
-    <option value="hour">שעה אחרונה</option>
-    <option value="day" selected>24 שעות</option>
-    <option value="week">שבוע אחרון</option>
-  </select>
-  <label>עוצמה מינימלית:</label>
-  <select id="minmag">
-    <option value="all">הכול</option>
-    <option value="2.5" selected>2.5+</option>
-    <option value="4.5">4.5+</option>
-    <option value="significant">משמעותיות</option>
-  </select>
-  <button id="israel">🇮🇱 התמקד בישראל</button>
-  <button id="world">🌍 כל העולם</button>
-  <button id="refresh">🔄 רענן</button>
-  <span id="updated"></span>
-</div>
+<aside id="panel" class="glass">
+  <h2>🔔 התראות אחרונות <span class="count" id="pCount">0</span></h2>
+  <div id="updated">טוען...</div>
+  <div id="items"></div>
+</aside>
 
-<main>
-  <aside id="list"><h2>🔔 התראות אחרונות</h2><div id="items"></div></aside>
-  <div id="map"></div>
-</main>
+<div id="card" class="glass"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/globe.gl@2.27.2/dist/globe.gl.min.js"></script>
 <script>
-const map = L.map('map', {worldCopyJump:true}).setView([25, 20], 2);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-  attribution:'&copy; OpenStreetMap &copy; CARTO | נתונים: USGS', maxZoom:18
-}).addTo(map);
+const IMG = 'https://cdn.jsdelivr.net/npm/three-globe@2.27.2/example/img/';
+const $ = id => document.getElementById(id);
+let quakes = [], knownIds = new Set(), firstLoad = true, selectedId = null;
 
-const layer = L.layerGroup().addTo(map);
-const markers = {};
-let knownIds = new Set();
-let firstLoad = true;
+const globe = Globe()($('globe'))
+  .globeImageUrl(IMG + 'earth-blue-marble.jpg')
+  .bumpImageUrl(IMG + 'earth-topology.png')
+  .backgroundImageUrl(IMG + 'night-sky.png')
+  .atmosphereColor('#4da3ff')
+  .atmosphereAltitude(0.22)
+  // red dots
+  .pointLat('lat').pointLng('lng')
+  .pointAltitude(d => 0.01 + d.mag * 0.012)
+  .pointRadius(d => 0.25 + Math.max(d.mag, 0) * 0.12)
+  .pointColor(d => d.id === selectedId ? '#ffffff' : color(d.mag))
+  .pointResolution(16)
+  .pointLabel(d => `<div style="background:rgba(10,16,38,.9);padding:8px 12px;border-radius:10px;border:1px solid #ff5050">
+      <b style="color:#ff6b6b;font-size:18px">עוצמה ${d.mag.toFixed(1)}</b><br><span dir="ltr">${esc(d.place)}</span><br>${timeAgo(d.time)}</div>`)
+  .onPointClick(d => select(d))
+  // pulsing red rings
+  .ringLat('lat').ringLng('lng')
+  .ringColor(() => t => `rgba(255,50,50,${1 - t})`)
+  .ringMaxRadius(d => 1.5 + Math.max(d.mag, 0) * 0.9)
+  .ringPropagationSpeed(d => 1 + d.mag * 0.3)
+  .ringRepeatPeriod(d => 1400 - Math.min(d.mag, 7) * 120)
+  // magnitude labels above the quakes
+  .htmlLat('lat').htmlLng('lng')
+  .htmlAltitude(d => 0.02 + d.mag * 0.012)
+  .htmlElement(d => {
+    const el = document.createElement('div');
+    el.className = 'lbl' + (d.mag >= 6 ? ' big' : '');
+    el.textContent = d.mag.toFixed(1);
+    el.onclick = () => select(d);
+    return el;
+  });
+
+globe.controls().autoRotate = true;
+globe.controls().autoRotateSpeed = 0.45;
+globe.pointOfView({lat: 25, lng: 35, altitude: 2.3}, 0);
+
+function resize(){ globe.width(innerWidth).height(innerHeight); }
+addEventListener('resize', resize); resize();
 
 function color(m){
-  if (m >= 6) return '#ff1f1f';
+  if (m >= 6) return '#ff1a1a';
   if (m >= 4.5) return '#ff3b3b';
-  if (m >= 2.5) return '#ff6b5b';
-  return '#ff9a8a';
+  if (m >= 2.5) return '#ff6a4d';
+  return '#ff9a7a';
 }
-function radius(m){ return Math.max(4, Math.pow(Math.max(m,0)+1, 1.6)); }
-
 function timeAgo(t){
-  const s = Math.floor((Date.now()-t)/1000);
+  const s = Math.floor((Date.now() - t) / 1000);
   if (s < 60) return 'לפני ' + s + ' שניות';
-  const m = Math.floor(s/60); if (m < 60) return 'לפני ' + m + ' דקות';
-  const h = Math.floor(m/60); if (h < 24) return 'לפני ' + h + ' שעות';
-  return 'לפני ' + Math.floor(h/24) + ' ימים';
+  const m = Math.floor(s / 60); if (m < 60) return 'לפני ' + m + ' דקות';
+  const h = Math.floor(m / 60); if (h < 24) return 'לפני ' + h + ' שעות';
+  return 'לפני ' + Math.floor(h / 24) + ' ימים';
 }
-function fmtDate(t){ return new Date(t).toLocaleString('he-IL'); }
-function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const fmtDate = t => new Date(t).toLocaleString('he-IL');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 async function load(){
-  const url = `https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/${document.getElementById('minmag').value}_${document.getElementById('period').value}.geojson`;
+  const url = `https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/${$('minmag').value}_${$('period').value}.geojson`;
   try{
-    const res = await fetch(url);
-    const data = await res.json();
-    render(data.features.sort((a,b)=>b.properties.time-a.properties.time));
-    document.getElementById('updated').textContent = 'עודכן: ' + new Date().toLocaleTimeString('he-IL');
+    const data = await (await fetch(url)).json();
+    quakes = data.features.map(f => ({
+      id: f.id, mag: f.properties.mag ?? 0, place: f.properties.place || 'מיקום לא ידוע',
+      time: f.properties.time, url: f.properties.url, tsunami: f.properties.tsunami,
+      lng: f.geometry.coordinates[0], lat: f.geometry.coordinates[1], depth: f.geometry.coordinates[2]
+    })).sort((a, b) => b.time - a.time);
+    render();
+    $('updated').textContent = 'עודכן לאחרונה: ' + new Date().toLocaleTimeString('he-IL');
   }catch(e){
-    document.getElementById('updated').textContent = '⚠️ שגיאה בטעינת הנתונים';
+    $('updated').textContent = '⚠️ שגיאה בטעינת הנתונים, מנסה שוב בעוד דקה';
   }
-  document.getElementById('loading').classList.add('hide');
+  $('loading').classList.add('hide');
 }
 
-function render(quakes){
-  layer.clearLayers();
-  const items = document.getElementById('items');
+function render(){
+  globe.pointsData(quakes);
+  // rings only for the stronger / recent quakes to keep it fast
+  globe.ringsData(quakes.filter(q => q.mag >= 4 || Date.now() - q.time < 3 * 3600e3).slice(0, 80));
+  // labels: strongest quakes, so the globe stays readable
+  globe.htmlElementsData([...quakes].sort((a, b) => b.mag - a.mag).slice(0, 40));
+
+  const items = $('items');
   items.innerHTML = '';
-  const newIds = new Set();
-
-  quakes.forEach(q => {
-    const p = q.properties, [lon, lat, depth] = q.geometry.coordinates;
-    const m = p.mag ?? 0;
-    newIds.add(q.id);
-
-    const c = L.circleMarker([lat, lon], {
-      radius: radius(m), color:'#fff', weight:1, fillColor: color(m), fillOpacity:.7
-    }).addTo(layer);
-    c.bindPopup(`<b style="font-size:18px;color:#ff5b5b">עוצמה ${m.toFixed(1)}</b><br>
-      <span dir="ltr">${esc(p.place)}</span><br>
-      🕒 ${fmtDate(p.time)}<br>📏 עומק: ${depth.toFixed(1)} ק"מ
-      ${p.tsunami ? '<br><span class="tsunami">🌊 אזהרת צונאמי</span>' : ''}
-      <br><a href="${esc(p.url)}" target="_blank">פרטים נוספים ב-USGS</a>`);
-    // the magnitude shown above the circle
-    c.bindTooltip(m.toFixed(1), {permanent: m >= 4, direction:'top', className:'mag-label', offset:[0,-radius(m)]});
-    markers[q.id] = c;
-
-    // pulsing ring for quakes from the last hour
-    if (Date.now() - p.time < 3600e3){
-      L.circleMarker([lat, lon], {radius: radius(m)+6, color: color(m), weight:2, fill:false, className:'ring'}).addTo(layer);
-    }
-  });
-
-  quakes.slice(0, 50).forEach(q => {
-    const p = q.properties, [lon, lat] = q.geometry.coordinates, m = p.mag ?? 0;
+  quakes.slice(0, 60).forEach(q => {
     const div = document.createElement('div');
-    div.className = 'item' + (!firstLoad && !knownIds.has(q.id) ? ' new' : '');
-    div.innerHTML = `<div class="mag" style="background:${color(m)}">${m.toFixed(1)}</div>
-      <div class="info"><div class="place">${esc(p.place || 'מיקום לא ידוע')}</div>
-      <div class="meta">${timeAgo(p.time)} · ${fmtDate(p.time)}${p.tsunami ? ' · <span class="tsunami">🌊 צונאמי</span>' : ''}</div></div>`;
-    div.onclick = () => { map.flyTo([lat, lon], 6); markers[q.id].openPopup(); };
+    div.className = 'item' + (q.id === selectedId ? ' sel' : '') + (!firstLoad && !knownIds.has(q.id) ? ' new' : '');
+    div.innerHTML = `<div class="mag" style="background:${color(q.mag)}">${q.mag.toFixed(1)}</div>
+      <div class="info"><div class="place">${esc(q.place)}</div>
+      <div class="meta">${timeAgo(q.time)}${q.tsunami ? ' · <span class="tsunami">🌊 צונאמי</span>' : ''}</div></div>`;
+    div.onclick = () => select(q);
     items.appendChild(div);
   });
-  if (!quakes.length) items.innerHTML = '<div class="item">אין רעידות בטווח שנבחר</div>';
+  if (!quakes.length) items.innerHTML = '<div class="item">אין רעידות בטווח שנבחר 🙂</div>';
 
-  const mags = quakes.map(q => q.properties.mag ?? 0);
-  document.getElementById('sLast').textContent = quakes.length ? mags[0].toFixed(1) : '–';
-  document.getElementById('sMax').textContent = quakes.length ? Math.max(...mags).toFixed(1) : '–';
-  document.getElementById('sCount').textContent = quakes.length;
+  const mags = quakes.map(q => q.mag);
+  $('sLast').textContent = quakes.length ? mags[0].toFixed(1) : '–';
+  $('sMax').textContent = quakes.length ? Math.max(...mags).toFixed(1) : '–';
+  $('sCount').textContent = quakes.length;
+  $('pCount').textContent = Math.min(quakes.length, 60);
 
-  knownIds = newIds;
+  knownIds = new Set(quakes.map(q => q.id));
   firstLoad = false;
 }
 
-const legend = L.control({position:'bottomleft'});
-legend.onAdd = () => {
-  const d = L.DomUtil.create('div','legend');
-  d.innerHTML = '<b>עוצמה</b><br><i style="background:#ff1f1f"></i>6+<br><i style="background:#ff3b3b"></i>4.5–6<br><i style="background:#ff6b5b"></i>2.5–4.5<br><i style="background:#ff9a8a"></i>מתחת 2.5';
-  return d;
-};
-legend.addTo(map);
+function select(q){
+  selectedId = q.id;
+  setSpin(false);
+  globe.pointOfView({lat: q.lat, lng: q.lng, altitude: 1.2}, 1500);
+  globe.pointColor(globe.pointColor()); // refresh colors
+  $('card').innerHTML = `<button class="x" onclick="closeCard()">✕</button>
+    <div class="big">${q.mag.toFixed(1)}</div>
+    <div class="place" dir="ltr">${esc(q.place)}</div>
+    <div class="row">🕒 ${fmtDate(q.time)} (${timeAgo(q.time)})</div>
+    <div class="row">📏 עומק: ${q.depth.toFixed(1)} ק"מ</div>
+    <div class="row">📍 ${q.lat.toFixed(2)}, ${q.lng.toFixed(2)}</div>
+    ${q.tsunami ? '<div class="row tsunami">🌊 אזהרת צונאמי</div>' : ''}
+    <a href="${esc(q.url)}" target="_blank">פרטים מלאים ב-USGS ←</a>`;
+  $('card').classList.add('show');
+  document.querySelectorAll('.item').forEach((el, i) => el.classList.toggle('sel', quakes[i]?.id === q.id));
+}
+function closeCard(){
+  $('card').classList.remove('show');
+  selectedId = null;
+  globe.pointColor(globe.pointColor());
+}
+function setSpin(on){
+  globe.controls().autoRotate = on;
+  $('spin').classList.toggle('on', on);
+}
 
-document.getElementById('period').onchange = load;
-document.getElementById('minmag').onchange = load;
-document.getElementById('refresh').onclick = load;
-document.getElementById('israel').onclick = () => map.flyTo([31.5, 35], 6);
-document.getElementById('world').onclick = () => map.flyTo([25, 20], 2);
+$('period').onchange = load;
+$('minmag').onchange = load;
+$('spin').onclick = () => setSpin(!globe.controls().autoRotate);
+$('israel').onclick = () => { setSpin(false); globe.pointOfView({lat: 31.5, lng: 35, altitude: 0.6}, 1800); };
 
 load();
-setInterval(load, 60000); // auto refresh every minute
+setInterval(load, 60000);
 </script>
-<style>
-  .ring{animation:ring 1.5s ease-out infinite;transform-origin:center;transform-box:fill-box}
-  @keyframes ring{from{opacity:1;transform:scale(.6)}to{opacity:0;transform:scale(1.6)}}
-</style>
 </body>
 </html>
