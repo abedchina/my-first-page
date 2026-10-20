@@ -87,7 +87,7 @@
   <header>
     <div>
       <h1>📱➡️💻 חיישני הטלפון על המסך</h1>
-      <div class="muted">מצפן, הטיה, תאוצה, ג'יירוסקופ, GPS וסוללה. בזמן אמת, ישירות מהטלפון למחשב</div>
+      <div class="muted">מצפן, הטיה, תאוצה, ג'יירוסקופ, GPS וסוללה. בזמן אמת, מהטלפון למחשב</div>
     </div>
     <a class="home" href="index.html">🏠 לדף הבית</a>
   </header>
@@ -182,13 +182,16 @@
   <div class="kv card" id="pList" style="text-align:right"></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const target = new URLSearchParams(location.search).get('peer');
 const DIRS = ['צפון', 'צפון-מזרח', 'מזרח', 'דרום-מזרח', 'דרום', 'דרום-מערב', 'מערב', 'צפון-מערב'];
 const dirName = h => DIRS[Math.round(h / 45) % 8];
+// phone and computer meet on a public MQTT broker (free, no key) under a random topic
+const BROKER = 'wss://broker.emqx.io:8084/mqtt';
+const topicFor = id => 'innotech-phone-sensors/' + id;
 
 if (target) phoneMode(); else deskMode();
 
@@ -196,15 +199,10 @@ if (target) phoneMode(); else deskMode();
 function phoneMode(){
   $('desk').hidden = true; $('phone').hidden = false;
   const s = {};           // latest sensor values
-  let conn = null;
-
-  const peer = new Peer();
-  peer.on('open', () => {
-    conn = peer.connect(target, { serialization: 'json' });
-    conn.on('open', () => { $('pStatus').classList.add('on'); $('pStatusText').textContent = 'מחובר למחשב ✓'; });
-    conn.on('close', () => { $('pStatus').classList.remove('on'); $('pStatusText').textContent = 'החיבור נסגר. רענן את הדף'; });
-  });
-  peer.on('error', e => { $('pStatusText').textContent = 'שגיאת חיבור: ' + e.type + '. סרוק שוב את הקוד'; });
+  const client = mqtt.connect(BROKER, { reconnectPeriod: 2000 });
+  client.on('connect', () => { $('pStatus').classList.add('on'); $('pStatusText').textContent = 'מחובר ✓ שולח למחשב'; });
+  client.on('offline', () => { $('pStatus').classList.remove('on'); $('pStatusText').textContent = 'אין חיבור לאינטרנט, מנסה שוב...'; });
+  client.on('error', () => { $('pStatusText').textContent = 'שגיאת חיבור, מנסה שוב...'; });
 
   $('startBtn').onclick = async () => {
     // iPhone asks permission for motion sensors, only from a tap
@@ -246,7 +244,7 @@ function phoneMode(){
     $('startBtn').disabled = true;
 
     setInterval(() => {
-      if (conn?.open) conn.send(s);
+      if (client.connected) client.publish(topicFor(target), JSON.stringify(s));
       if (s.h != null){
         $('phoneHeading').textContent = Math.round(s.h) + '°';
         $('phoneArrow').style.transform = `rotate(${-s.h}deg)`;
@@ -256,7 +254,7 @@ function phoneMode(){
         <span>תאוצה</span><span>${f(s.ax)}, ${f(s.ay)}, ${f(s.az)}</span>
         <span>GPS</span><span>${s.lat ? s.lat.toFixed(5) + ', ' + s.lon.toFixed(5) : '–'}</span>
         <span>סוללה</span><span>${s.bat ?? '–'}%</span>`;
-    }, 60);
+    }, 70);
   };
 }
 
@@ -266,8 +264,8 @@ function deskMode(){
   const accHist = [], gyroHist = [];
   let shakes = 0, lastShake = 0, rot = 0, demoTimer = null;
 
-  const peer = new Peer();
-  peer.on('open', id => {
+  const id = Math.random().toString(36).slice(2, 10);
+  {
     // the phone needs a real web address: when this page was opened from a local file, use the GitHub site
     const base = location.protocol === 'https:' ? location.origin + location.pathname
                : 'https://abedchina.github.io/my-first-page/phone-sensors.html';
@@ -279,14 +277,15 @@ function deskMode(){
       try{ await navigator.clipboard.writeText(url); $('copyLink').textContent = '✅ הועתק'; }
       catch{ getSelection().selectAllChildren($('link')); }
     };
+  }
+  let lastMsg = 0;
+  const client = mqtt.connect(BROKER, { reconnectPeriod: 2000 });
+  client.on('connect', () => { client.subscribe(topicFor(id)); if (!lastMsg && !demoTimer) setStatus(false, 'ממתין לטלפון...'); });
+  client.on('offline', () => setStatus(false, 'אין חיבור לאינטרנט, מנסה שוב...'));
+  client.on('message', (t, msg) => {
+    try{ const s = JSON.parse(msg.toString()); if (!lastMsg || Date.now() - lastMsg > 3000){ stopDemo(); setStatus(true, 'הטלפון מחובר ✓'); } lastMsg = Date.now(); show(s); }catch{}
   });
-  peer.on('connection', conn => {
-    conn.on('open', () => { stopDemo(); setStatus(true, 'הטלפון מחובר ✓'); });
-    conn.on('data', show);
-    conn.on('close', () => setStatus(false, 'הטלפון התנתק. סרוק שוב'));
-  });
-  peer.on('error', e => setStatus(false, 'שגיאת חיבור (' + e.type + '). רענן את הדף'));
-  peer.on('disconnected', () => peer.reconnect());
+  setInterval(() => { if (lastMsg && Date.now() - lastMsg > 3000) setStatus(false, 'לא מגיעים נתונים מהטלפון...'); }, 1000);
 
   function setStatus(on, txt){ $('status').classList.toggle('on', on); $('statusText').textContent = txt; }
 
@@ -347,7 +346,7 @@ function deskMode(){
         lat: 32.7019 + Math.sin(t / 10) * .001, lon: 35.2971 + Math.cos(t / 10) * .001, acc: 8, spd: 1.3, alt: 340, bat: 76, chg: false });
     }, 60);
   };
-  function stopDemo(){ clearInterval(demoTimer); demoTimer = null; $('demo').textContent = '🎮 מצב הדגמה (בלי טלפון)'; setStatus(false, 'ממתין לטלפון...'); }
+  function stopDemo(){ clearInterval(demoTimer); demoTimer = null; $('demo').textContent = '🎮 מצב הדגמה (בלי טלפון)'; if (!lastMsg) setStatus(false, 'ממתין לטלפון...'); }
 
   drawLevel(0, 0);
 }
