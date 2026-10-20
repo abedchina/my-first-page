@@ -96,9 +96,10 @@
     <div id="qr">טוען...</div>
     <div>
       <div class="status" id="status"><span class="dot"></span><span id="statusText">ממתין לטלפון...</span></div>
+      <div style="margin:10px 0">הקוד של המחשב הזה: <b id="bigCode" class="mono" style="font-size:34px;letter-spacing:.2em;color:var(--accent)">-----</b></div>
       <ol class="steps">
-        <li>סרוק את הקוד עם המצלמה של הטלפון.</li>
-        <li>בטלפון לחץ <b>"הפעל חיישנים"</b> ואשר את ההרשאות.</li>
+        <li>בטלפון פתח את <b class="mono">abedchina.github.io/my-first-page/phone.html</b>, או סרוק את ה-QR.</li>
+        <li>הקלד את הקוד ולחץ <b>"הפעל חיישנים"</b>. אשר את ההרשאות.</li>
         <li>סובב את הטלפון וראה את המצפן זז כאן! 🧭</li>
       </ol>
       <div id="link" class="mono"></div>
@@ -264,12 +265,13 @@ function deskMode(){
   const accHist = [], gyroHist = [];
   let shakes = 0, lastShake = 0, rot = 0, demoTimer = null;
 
-  const id = Math.random().toString(36).slice(2, 10);
+  const id = String(Math.floor(10000 + Math.random() * 90000));   // 5-digit code
+  $('bigCode').textContent = id;
   {
     // the phone needs a real web address: when this page was opened from a local file, use the GitHub site
-    const base = location.protocol === 'https:' ? location.origin + location.pathname
-               : 'https://abedchina.github.io/my-first-page/phone-sensors.html';
-    const url = base + '?peer=' + id;
+    const base = location.protocol === 'https:' ? location.href.replace(/[^/]*$/, '')
+               : 'https://abedchina.github.io/my-first-page/';
+    const url = base + 'phone.html?code=' + id;
     $('link').textContent = url;
     const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
     $('qr').innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
