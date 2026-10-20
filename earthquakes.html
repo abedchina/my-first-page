@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מפת רעידות אדמה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root{
+    --bg:#0b1020; --panel:#121a33; --panel2:#18224a; --text:#e8ecff; --muted:#93a0c8;
+    --red:#ff3b3b; --orange:#ff9f1c; --yellow:#ffd23f; --green:#2ec4b6; --border:#26315f;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:'Heebo',system-ui,sans-serif}
+  body{display:flex;flex-direction:column}
+
+  header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:12px 18px;
+    background:linear-gradient(90deg,#1a0f2e,#0f1a3d);border-bottom:1px solid var(--border)}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px}
+  .pulse{width:14px;height:14px;border-radius:50%;background:var(--red);box-shadow:0 0 0 0 rgba(255,59,59,.7);animation:pulse 1.6s infinite}
+  @keyframes pulse{70%{box-shadow:0 0 0 14px rgba(255,59,59,0)}100%{box-shadow:0 0 0 0 rgba(255,59,59,0)}}
+  .stats{display:flex;gap:10px;flex-wrap:wrap;margin-inline-start:auto}
+  .stat{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:12px;padding:6px 14px;min-width:110px;text-align:center}
+  .stat b{display:block;font-size:24px;line-height:1.1}
+  .stat span{font-size:12px;color:var(--muted)}
+  .stat.big b{color:var(--red);font-size:30px}
+
+  .controls{display:flex;gap:8px;flex-wrap:wrap;padding:10px 18px;background:var(--panel);border-bottom:1px solid var(--border);align-items:center}
+  .controls label{font-size:13px;color:var(--muted)}
+  select,button{font-family:inherit;font-size:14px;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer}
+  button:hover,select:hover{border-color:#4b5cab}
+  #updated{font-size:12px;color:var(--muted);margin-inline-start:auto}
+
+  main{flex:1;display:flex;min-height:0}
+  #list{width:340px;background:var(--panel);border-inline-end:1px solid var(--border);overflow-y:auto;order:0}
+  #map{flex:1;order:1}
+  #list h2{margin:0;padding:14px 16px;font-size:16px;position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--border);z-index:1}
+  .item{display:flex;gap:12px;align-items:center;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;transition:background .15s}
+  .item:hover{background:var(--panel2)}
+  .item.new{animation:flash 2s}
+  @keyframes flash{from{background:rgba(255,59,59,.35)}to{background:transparent}}
+  .mag{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:18px;color:#fff}
+  .info{min-width:0}
+  .place{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr;text-align:right}
+  .meta{font-size:12px;color:var(--muted)}
+  .tsunami{color:var(--yellow);font-weight:600}
+
+  .mag-label{background:transparent;border:none;box-shadow:none;color:#fff;font-weight:800;font-size:13px;text-shadow:0 0 4px #000,0 0 2px #000}
+  .mag-label::before{display:none}
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel2);color:var(--text)}
+  .leaflet-popup-content{font-family:'Heebo',sans-serif;direction:rtl;text-align:right}
+  .leaflet-popup-content a{color:#7fb3ff}
+  .legend{background:rgba(18,26,51,.9);padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.8;color:var(--text);direction:rtl}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-inline-end:6px;vertical-align:middle}
+
+  #loading{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:9999;font-size:18px}
+  #loading.hide{display:none}
+
+  @media (max-width:760px){
+    main{flex-direction:column}
+    #map{height:55vh;flex:none}
+    #list{width:100%;order:2;flex:1}
+    .stats{margin-inline-start:0;width:100%}
+    .stat{flex:1;min-width:0}
+  }
+</style>
+</head>
+<body>
+<div id="loading">⏳ טוען נתוני רעידות אדמה...</div>
+
+<header>
+  <div class="brand"><div class="pulse"></div> מפת רעידות אדמה בזמן אמת</div>
+  <div class="stats">
+    <div class="stat big"><b id="sLast">–</b><span>עוצמה – רעידה אחרונה</span></div>
+    <div class="stat"><b id="sMax">–</b><span>החזקה ביותר</span></div>
+    <div class="stat"><b id="sCount">–</b><span>מספר רעידות</span></div>
+  </div>
+</header>
+
+<div class="controls">
+  <label>טווח זמן:</label>
+  <select id="period">
+    <option value="hour">שעה אחרונה</option>
+    <option value="day" selected>24 שעות</option>
+    <option value="week">שבוע אחרון</option>
+  </select>
+  <label>עוצמה מינימלית:</label>
+  <select id="minmag">
+    <option value="all">הכול</option>
+    <option value="2.5" selected>2.5+</option>
+    <option value="4.5">4.5+</option>
+    <option value="significant">משמעותיות</option>
+  </select>
+  <button id="israel">🇮🇱 התמקד בישראל</button>
+  <button id="world">🌍 כל העולם</button>
+  <button id="refresh">🔄 רענן</button>
+  <span id="updated"></span>
+</div>
+
+<main>
+  <aside id="list"><h2>🔔 התראות אחרונות</h2><div id="items"></div></aside>
+  <div id="map"></div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const map = L.map('map', {worldCopyJump:true}).setView([25, 20], 2);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution:'&copy; OpenStreetMap &copy; CARTO | נתונים: USGS', maxZoom:18
+}).addTo(map);
+
+const layer = L.layerGroup().addTo(map);
+const markers = {};
+let knownIds = new Set();
+let firstLoad = true;
+
+function color(m){
+  if (m >= 6) return '#ff1f1f';
+  if (m >= 4.5) return '#ff3b3b';
+  if (m >= 2.5) return '#ff6b5b';
+  return '#ff9a8a';
+}
+function radius(m){ return Math.max(4, Math.pow(Math.max(m,0)+1, 1.6)); }
+
+function timeAgo(t){
+  const s = Math.floor((Date.now()-t)/1000);
+  if (s < 60) return 'לפני ' + s + ' שניות';
+  const m = Math.floor(s/60); if (m < 60) return 'לפני ' + m + ' דקות';
+  const h = Math.floor(m/60); if (h < 24) return 'לפני ' + h + ' שעות';
+  return 'לפני ' + Math.floor(h/24) + ' ימים';
+}
+function fmtDate(t){ return new Date(t).toLocaleString('he-IL'); }
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function load(){
+  const url = `https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/${document.getElementById('minmag').value}_${document.getElementById('period').value}.geojson`;
+  try{
+    const res = await fetch(url);
+    const data = await res.json();
+    render(data.features.sort((a,b)=>b.properties.time-a.properties.time));
+    document.getElementById('updated').textContent = 'עודכן: ' + new Date().toLocaleTimeString('he-IL');
+  }catch(e){
+    document.getElementById('updated').textContent = '⚠️ שגיאה בטעינת הנתונים';
+  }
+  document.getElementById('loading').classList.add('hide');
+}
+
+function render(quakes){
+  layer.clearLayers();
+  const items = document.getElementById('items');
+  items.innerHTML = '';
+  const newIds = new Set();
+
+  quakes.forEach(q => {
+    const p = q.properties, [lon, lat, depth] = q.geometry.coordinates;
+    const m = p.mag ?? 0;
+    newIds.add(q.id);
+
+    const c = L.circleMarker([lat, lon], {
+      radius: radius(m), color:'#fff', weight:1, fillColor: color(m), fillOpacity:.7
+    }).addTo(layer);
+    c.bindPopup(`<b style="font-size:18px;color:#ff5b5b">עוצמה ${m.toFixed(1)}</b><br>
+      <span dir="ltr">${esc(p.place)}</span><br>
+      🕒 ${fmtDate(p.time)}<br>📏 עומק: ${depth.toFixed(1)} ק"מ
+      ${p.tsunami ? '<br><span class="tsunami">🌊 אזהרת צונאמי</span>' : ''}
+      <br><a href="${esc(p.url)}" target="_blank">פרטים נוספים ב-USGS</a>`);
+    // the magnitude shown above the circle
+    c.bindTooltip(m.toFixed(1), {permanent: m >= 4, direction:'top', className:'mag-label', offset:[0,-radius(m)]});
+    markers[q.id] = c;
+
+    // pulsing ring for quakes from the last hour
+    if (Date.now() - p.time < 3600e3){
+      L.circleMarker([lat, lon], {radius: radius(m)+6, color: color(m), weight:2, fill:false, className:'ring'}).addTo(layer);
+    }
+  });
+
+  quakes.slice(0, 50).forEach(q => {
+    const p = q.properties, [lon, lat] = q.geometry.coordinates, m = p.mag ?? 0;
+    const div = document.createElement('div');
+    div.className = 'item' + (!firstLoad && !knownIds.has(q.id) ? ' new' : '');
+    div.innerHTML = `<div class="mag" style="background:${color(m)}">${m.toFixed(1)}</div>
+      <div class="info"><div class="place">${esc(p.place || 'מיקום לא ידוע')}</div>
+      <div class="meta">${timeAgo(p.time)} · ${fmtDate(p.time)}${p.tsunami ? ' · <span class="tsunami">🌊 צונאמי</span>' : ''}</div></div>`;
+    div.onclick = () => { map.flyTo([lat, lon], 6); markers[q.id].openPopup(); };
+    items.appendChild(div);
+  });
+  if (!quakes.length) items.innerHTML = '<div class="item">אין רעידות בטווח שנבחר</div>';
+
+  const mags = quakes.map(q => q.properties.mag ?? 0);
+  document.getElementById('sLast').textContent = quakes.length ? mags[0].toFixed(1) : '–';
+  document.getElementById('sMax').textContent = quakes.length ? Math.max(...mags).toFixed(1) : '–';
+  document.getElementById('sCount').textContent = quakes.length;
+
+  knownIds = newIds;
+  firstLoad = false;
+}
+
+const legend = L.control({position:'bottomleft'});
+legend.onAdd = () => {
+  const d = L.DomUtil.create('div','legend');
+  d.innerHTML = '<b>עוצמה</b><br><i style="background:#ff1f1f"></i>6+<br><i style="background:#ff3b3b"></i>4.5–6<br><i style="background:#ff6b5b"></i>2.5–4.5<br><i style="background:#ff9a8a"></i>מתחת 2.5';
+  return d;
+};
+legend.addTo(map);
+
+document.getElementById('period').onchange = load;
+document.getElementById('minmag').onchange = load;
+document.getElementById('refresh').onclick = load;
+document.getElementById('israel').onclick = () => map.flyTo([31.5, 35], 6);
+document.getElementById('world').onclick = () => map.flyTo([25, 20], 2);
+
+load();
+setInterval(load, 60000); // auto refresh every minute
+</script>
+<style>
+  .ring{animation:ring 1.5s ease-out infinite;transform-origin:center;transform-box:fill-box}
+  @keyframes ring{from{opacity:1;transform:scale(.6)}to{opacity:0;transform:scale(1.6)}}
+</style>
+</body>
+</html>
