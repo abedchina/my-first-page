@@ -268,7 +268,10 @@ function deskMode(){
 
   const peer = new Peer();
   peer.on('open', id => {
-    const url = location.origin + location.pathname + '?peer=' + id;
+    // the phone needs a real web address: when this page was opened from a local file, use the GitHub site
+    const base = location.protocol === 'https:' ? location.origin + location.pathname
+               : 'https://abedchina.github.io/my-first-page/phone-sensors.html';
+    const url = base + '?peer=' + id;
     $('link').textContent = url;
     const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
     $('qr').innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
