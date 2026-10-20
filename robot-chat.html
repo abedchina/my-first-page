@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>רובוט AI מדבר</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#070b1a; --glass:rgba(16,24,56,.6); --glass2:rgba(255,255,255,.06); --border:rgba(255,255,255,.13);
+    --text:#eef2ff; --muted:#98a3cc; --cyan:#22d3ee; --violet:#a78bfa; --pink:#f472b6; --green:#34d399; --red:#f87171;
+  }
+  :root{color-scheme:dark}
+  *{box-sizing:border-box}
+  #mode{display:none;padding:12px 16px;margin-bottom:18px;color:var(--green);font-weight:600}
+  #mode.show{display:block}
+  html,body{margin:0;min-height:100%;direction:rtl;color:var(--text);font-family:'Heebo',system-ui,sans-serif;background:var(--bg)}
+  body{background:radial-gradient(1200px 600px at 80% -10%,rgba(124,58,237,.35),transparent 60%),
+       radial-gradient(900px 500px at 0% 110%,rgba(34,211,238,.25),transparent 60%),var(--bg);background-attachment:fixed}
+  /* circuit grid */
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;opacity:.08;
+    background-image:linear-gradient(var(--cyan) 1px,transparent 1px),linear-gradient(90deg,var(--cyan) 1px,transparent 1px);background-size:40px 40px}
+  .wrap{max-width:1180px;margin:0 auto;padding:20px 16px 40px;position:relative}
+  .glass{background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--border);border-radius:22px;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+
+  header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  header h1{margin:0;font-size:28px;font-weight:900;background:linear-gradient(90deg,var(--cyan),var(--violet),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+  header p{margin:2px 0 0;color:var(--muted);font-size:14px}
+  .home{margin-inline-start:auto;color:var(--muted);text-decoration:none;font-size:14px;border:1px solid var(--border);padding:6px 12px;border-radius:10px}
+  .home:hover{color:var(--text)}
+
+  /* API key bar */
+  #keybar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 16px;margin-bottom:18px}
+  #keybar input{flex:1;min-width:200px;direction:ltr;font-family:monospace;background:rgba(0,0,0,.3);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:14px}
+  #keybar small{color:var(--muted);width:100%}
+  #keybar small a{color:var(--cyan)}
+  .ok{color:var(--green);font-weight:600}
+
+  button{font-family:inherit;font-size:14px;cursor:pointer;border-radius:12px;border:1px solid var(--border);background:var(--glass2);color:var(--text);padding:9px 14px;transition:.2s}
+  button:hover{background:rgba(255,255,255,.14)}
+  button.primary{background:linear-gradient(135deg,#7c3aed,#06b6d4);border:none;font-weight:700}
+  button.primary:hover{filter:brightness(1.15)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+
+  .grid{display:grid;grid-template-columns:320px 1fr;gap:18px}
+
+  /* robot */
+  .robot-card{padding:22px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+  .robot{width:220px;height:240px;position:relative}
+  .antenna{position:absolute;top:0;left:50%;width:4px;height:34px;background:#8aa0d6;transform:translateX(-50%)}
+  .antenna::after{content:'';position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:16px;height:16px;border-radius:50%;background:var(--pink);box-shadow:0 0 18px var(--pink);animation:blinkled 1.4s infinite}
+  @keyframes blinkled{50%{opacity:.35}}
+  .head{position:absolute;top:30px;left:10px;right:10px;height:170px;border-radius:40px;background:linear-gradient(160deg,#2b3a73,#141c42);border:3px solid #4b5fa6;box-shadow:inset 0 0 30px rgba(34,211,238,.25),0 0 40px rgba(124,58,237,.35)}
+  .screen{position:absolute;inset:22px 20px 22px;border-radius:26px;background:#030817;border:2px solid #22305f;overflow:hidden}
+  .eye{position:absolute;top:30px;width:38px;height:38px;border-radius:50%;background:var(--cyan);box-shadow:0 0 22px var(--cyan);animation:blink 4s infinite}
+  .eye.l{right:32px}.eye.r{left:32px}
+  @keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+  .robot.thinking .eye{background:var(--violet);box-shadow:0 0 22px var(--violet);animation:look 1.2s infinite alternate}
+  @keyframes look{from{translate:-6px 0}to{translate:6px 0}}
+  .mouth{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);display:flex;gap:4px;align-items:center;height:26px}
+  .mouth span{width:6px;height:6px;border-radius:3px;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+  .robot.talking .mouth span{animation:talk .35s infinite alternate}
+  .robot.talking .mouth span:nth-child(2n){animation-delay:.12s}
+  .robot.talking .mouth span:nth-child(3n){animation-delay:.22s}
+  @keyframes talk{to{height:24px}}
+  .ear{position:absolute;top:95px;width:16px;height:46px;border-radius:8px;background:#4b5fa6}
+  .ear.l{right:-4px}.ear.r{left:-4px}
+  .neck{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:120px;height:36px;border-radius:14px 14px 4px 4px;background:linear-gradient(#2b3a73,#141c42);border:3px solid #4b5fa6}
+  #status{font-size:15px;font-weight:600;min-height:22px}
+  .toggles{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .toggles button.on{background:rgba(52,211,153,.2);border-color:rgba(52,211,153,.6)}
+
+  /* tabs */
+  .tabs{display:flex;gap:8px;margin-bottom:12px}
+  .tabs button{flex:1;padding:12px;font-weight:700;font-size:15px}
+  .tabs button.active{background:linear-gradient(135deg,rgba(124,58,237,.6),rgba(6,182,212,.5));border-color:transparent}
+  .panel{padding:16px;display:none;flex-direction:column;gap:12px;min-height:560px}
+  .panel.active{display:flex}
+
+  /* chat */
+  #chat{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:4px;max-height:58vh;min-height:300px}
+  .msg{max-width:85%;padding:12px 16px;border-radius:18px;line-height:1.65;font-size:15px;white-space:pre-wrap;word-wrap:break-word}
+  .msg.user{align-self:flex-start;background:linear-gradient(135deg,#7c3aed,#4f46e5);border-bottom-right-radius:4px}
+  .msg.bot{align-self:flex-end;background:rgba(255,255,255,.07);border:1px solid var(--border);border-bottom-left-radius:4px}
+  .msg.err{align-self:center;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.5);color:#fecaca}
+  .msg code{background:rgba(0,0,0,.4);padding:1px 6px;border-radius:6px;direction:ltr;unicode-bidi:embed;font-size:13px}
+  .msg pre{background:rgba(0,0,0,.45);padding:10px;border-radius:10px;direction:ltr;text-align:left;overflow-x:auto;white-space:pre;font-size:13px}
+  .cursor::after{content:'▍';animation:blinkled .8s infinite;color:var(--cyan)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chips button{font-size:13px;padding:6px 12px;border-radius:20px}
+  .inputrow{display:flex;gap:8px}
+  .inputrow textarea{flex:1;resize:none;height:52px;font-family:inherit;font-size:15px;background:rgba(0,0,0,.3);color:var(--text);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+  #mic.rec{background:rgba(248,113,113,.35);border-color:var(--red);animation:blinkled 1s infinite}
+
+  /* sensors */
+  .sensor-top{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .sensor-top select{font-family:inherit;font-size:14px;background:var(--glass2);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:9px 12px}
+  .sensor-top select option{background:#111836}
+  canvas{width:100%;height:220px;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:14px}
+  #csv{width:100%;height:110px;direction:ltr;font-family:monospace;font-size:12px;background:rgba(0,0,0,.3);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:10px;resize:vertical}
+  #analysis{line-height:1.7;font-size:15px;white-space:pre-wrap;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:14px;padding:14px;min-height:80px}
+  .hint{color:var(--muted);font-size:13px}
+
+  @media (max-width:860px){
+    .grid{grid-template-columns:1fr}
+    .robot{transform:scale(.8);margin:-20px 0}
+    .msg{max-width:95%}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>🤖 רובוט AI למגמת אלקטרוניקה</h1>
+      <p>שואלים בקול או בכתב, והרובוט עונה ומדבר. בנוסף: ניתוח חכם של נתוני חיישנים · מופעל על ידי Claude</p>
+    </div>
+    <a class="home" href="index.html">🏠 לדף הבית</a>
+  </header>
+
+  <div id="mode" class="glass">✅ מחובר דרך חשבון Claude שלך: אין צורך במפתח API</div>
+
+  <div id="keybar" class="glass">
+    <span>🔑</span>
+    <input id="key" type="password" placeholder="sk-ant-...  הדבק כאן מפתח API של Claude" autocomplete="off">
+    <button id="saveKey" class="primary">שמור</button>
+    <button id="clearKey">מחק</button>
+    <small id="keyInfo">המפתח נשמר רק בדפדפן שלך ונשלח ישירות ל-Anthropic, לא לשום מקום אחר. מקבלים מפתח ב-<a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>.</small>
+  </div>
+
+  <div class="grid">
+    <aside class="glass robot-card">
+      <div class="robot" id="robot">
+        <div class="antenna"></div>
+        <div class="head">
+          <div class="ear l"></div><div class="ear r"></div>
+          <div class="screen">
+            <div class="eye l"></div><div class="eye r"></div>
+            <div class="mouth"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+          </div>
+        </div>
+        <div class="neck"></div>
+      </div>
+      <div id="status">שלום! אני מוכן לשאלות 👋</div>
+      <div class="toggles">
+        <button id="voiceBtn" class="on">🔊 קול פעיל</button>
+        <button id="stopBtn">⏹️ עצור</button>
+        <button id="newChat">🆕 שיחה חדשה</button>
+      </div>
+      <p class="hint">💡 לחץ על 🎤 ודבר בעברית. הרובוט מבין, עונה ומקריא את התשובה (עובד הכי טוב ב-Chrome).</p>
+    </aside>
+
+    <section>
+      <div class="tabs">
+        <button class="active" data-tab="talk">💬 שאל את הרובוט</button>
+        <button data-tab="sensors">📊 ניתוח נתוני חיישנים</button>
+      </div>
+
+      <div class="glass panel active" id="talk">
+        <div id="chat"></div>
+        <div class="chips">
+          <button>מה ההבדל בין ESP32 לארדואינו?</button>
+          <button>איך מחשבים נגד ללד?</button>
+          <button>מה זה PWM ולמה צריך אותו?</button>
+          <button>תן לי רעיון לפרויקט IoT</button>
+        </div>
+        <div class="inputrow">
+          <button id="mic" title="דבר">🎤</button>
+          <textarea id="q" placeholder="כתוב שאלה על אלקטרוניקה..."></textarea>
+          <button id="send" class="primary">שלח ➤</button>
+        </div>
+      </div>
+
+      <div class="glass panel" id="sensors">
+        <div class="sensor-top">
+          <select id="sample">
+            <option value="temp">🌡️ חיישן טמפרטורה (DHT11) בכיתה</option>
+            <option value="battery">🔋 מתח סוללה של רובוט</option>
+            <option value="light">💡 חיישן אור (LDR) לאורך יום</option>
+          </select>
+          <button id="genData">🎲 צור נתונים לדוגמה</button>
+          <button id="analyze" class="primary">🧠 נתח עם Claude</button>
+        </div>
+        <canvas id="chart"></canvas>
+        <div class="hint">אפשר להדביק כאן נתונים אמיתיים מה-Serial Monitor של ה-ESP32 (שורה לכל מדידה: זמן,ערך):</div>
+        <textarea id="csv"></textarea>
+        <div id="analysis" class="hint">כאן יופיע הניתוח של Claude: מגמות, חריגות, תקלות אפשריות בחיישן והמלצות 🔍</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script type="module">
+let Anthropic = null;
+async function loadSdk(){
+  if (!Anthropic) Anthropic = (await import('https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.131.0/+esm')).default;
+  return Anthropic;
+}
+
+const $ = id => document.getElementById(id);
+const MODEL = 'claude-opus-5-5';
+const SYSTEM = `אתה "רובי", רובוט מורה חביב במגמת אלקטרוניקה בתיכון בישראל.
+ענה תמיד בעברית פשוטה וברורה, מותאמת לתלמידי תיכון.
+תשובות קצרות: 3–6 משפטים, אלא אם התלמיד מבקש הסבר מפורט או קוד.
+כשמתאים, תן דוגמה מעשית עם ESP32, ארדואינו, חיישנים, נגדים, לדים או מנועים.
+אם יש חישוב (למשל חוק אוהם), הראה את הנוסחה ואת החישוב צעד אחר צעד.
+אם יש קוד, כתוב אותו בבלוק קוד קצר עם הערות בעברית.
+הקפד על בטיחות: הזהר כשמדובר במתח רשת 230V או בסוללות ליתיום.`;
+
+// ---------- connection: Claude account (inside claude.ai) or API key ----------
+let sample = null;   // free mode: the viewer's own Claude account, no key
+let client = null;   // key mode: direct calls to the Claude API
+async function makeClient(k){
+  const A = await loadSdk();
+  client = new A({ apiKey: k, dangerouslyAllowBrowser: true });
+}
+async function loadKey(){
+  let k = '';
+  try { k = localStorage.getItem('claude_key') || ''; } catch {}
+  if (k){
+    $('key').value = k;
+    await makeClient(k);
+    $('keyInfo').innerHTML = '<span class="ok">✅ המפתח שמור ומוכן לשימוש</span>. הוא נשמר רק בדפדפן שלך.';
+  }
+}
+$('saveKey').onclick = async () => {
+  const k = $('key').value.trim();
+  if (!k.startsWith('sk-ant-')) { $('keyInfo').textContent = '⚠️ המפתח צריך להתחיל ב-sk-ant-'; return; }
+  try { localStorage.setItem('claude_key', k); } catch {}
+  await makeClient(k);
+  $('keyInfo').innerHTML = '<span class="ok">✅ המפתח נשמר!</span> אפשר להתחיל לשאול.';
+};
+$('clearKey').onclick = () => {
+  try { localStorage.removeItem('claude_key'); } catch {}
+  $('key').value = ''; client = null;
+  $('keyInfo').textContent = 'המפתח נמחק מהדפדפן.';
+};
+(async () => {
+  if (window.claude?.use){
+    sample = await window.claude.use('sample');
+    if (sample){ $('keybar').hidden = true; $('mode').classList.add('show'); return; }
+  }
+  loadKey();
+})();
+const ready = () => sample || client;
+
+const SAMPLE_ERRORS = {
+  not_granted: '🚫 לא אישרת לדף להשתמש ב-Claude. רענן את הדף ואשר.',
+  sampling_disabled: '🚫 Claude לא זמין בחשבון הזה.',
+  rate_limited: '⏳ יותר מדי בקשות או שנגמרה מכסת השימוש. נסה שוב מאוחר יותר.',
+  session_expired: '🔑 צריך להתחבר מחדש ל-claude.ai.',
+  refused: '🙅 Claude לא ענה על זה. נסה לנסח את השאלה אחרת.',
+};
+function errorText(e){
+  if (e && typeof e.code === 'string' && !(Anthropic && e instanceof Anthropic.APIError))
+    return SAMPLE_ERRORS[e.code] || '⚠️ שגיאה זמנית. נסה שוב.';
+  if (!Anthropic) return '⚠️ שגיאה: ' + (e.message || e);
+  if (e instanceof Anthropic.AuthenticationError) return '🔑 המפתח לא תקין. בדוק שהעתקת אותו נכון.';
+  if (e instanceof Anthropic.PermissionDeniedError) return '🚫 אין למפתח הזה הרשאה למודל.';
+  if (e instanceof Anthropic.RateLimitError) return '⏳ יותר מדי בקשות. חכה רגע ונסה שוב.';
+  if (e instanceof Anthropic.APIConnectionError) return '📡 אין חיבור לשרת. בדוק את האינטרנט.';
+  if (e instanceof Anthropic.APIError) return '⚠️ שגיאה מהשרת: ' + (e.message || e.status);
+  return '⚠️ שגיאה: ' + e.message;
+}
+
+// one call to Claude; onText gets the growing answer.
+// turns = [{role, content: string}], apiTurns = the same turns with full API content blocks
+async function askClaude({ system, turns, apiTurns, effort, onText }){
+  if (sample){
+    const { text } = await sample([{ role: 'user', content: system }, ...turns], {
+      cache: false, onText: ({ text }) => onText(text),
+    });
+    return { text, content: [{ type: 'text', text }] };
+  }
+  const stream = client.beta.messages.stream({
+    model: MODEL,
+    max_tokens: 16000,
+    system,
+    messages: apiTurns || turns,
+    output_config: { effort },
+    betas: ['server-side-fallback-2026-07-01'],
+    fallbacks: 'default',
+  });
+  let text = '';
+  for await (const ev of stream){
+    if (ev.type === 'content_block_delta' && ev.delta.type === 'text_delta'){
+      text += ev.delta.text;
+      onText(text);
+    }
+  }
+  const final = await stream.finalMessage();
+  if (final.stop_reason === 'refusal') throw { code: 'refused' };
+  return { text, content: final.content };
+}
+
+// ---------- robot face + voice ----------
+const robot = $('robot');
+let voiceOn = true;
+function setState(s, msg){
+  robot.classList.toggle('thinking', s === 'thinking');
+  robot.classList.toggle('talking', s === 'talking');
+  $('status').textContent = msg;
+}
+function plain(t){ return t.replace(/```[\s\S]*?```/g, ' (ראה קוד על המסך) ').replace(/[*#`>_|]/g, '').replace(/\s+/g, ' '); }
+function speak(text){
+  if (!voiceOn || !('speechSynthesis' in window)) { setState('idle', 'מוכן לשאלה הבאה 😊'); return; }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(plain(text));
+  u.lang = 'he-IL'; u.rate = 1.05;
+  const he = speechSynthesis.getVoices().find(v => v.lang.startsWith('he'));
+  if (he) u.voice = he;
+  u.onstart = () => setState('talking', '🗣️ מדבר...');
+  u.onend = u.onerror = () => setState('idle', 'מוכן לשאלה הבאה 😊');
+  speechSynthesis.speak(u);
+}
+window.speechSynthesis?.getVoices();
+$('voiceBtn').onclick = () => {
+  voiceOn = !voiceOn;
+  $('voiceBtn').classList.toggle('on', voiceOn);
+  $('voiceBtn').textContent = voiceOn ? '🔊 קול פעיל' : '🔇 קול כבוי';
+  if (!voiceOn) speechSynthesis.cancel();
+};
+$('stopBtn').onclick = () => { speechSynthesis.cancel(); setState('idle', 'עצרתי ✋'); };
+
+// ---------- simple formatting ----------
+const esc = s => s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function fmt(t){
+  return esc(t)
+    .replace(/```\w*\n?([\s\S]*?)(```|$)/g, (_, c) => `<pre>${c}</pre>`)
+    .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+    .replace(/^#+\s*(.*)$/gm, '<b>$1</b>');
+}
+
+// ---------- chat ----------
+let history = [];    // text turns
+let apiHistory = []; // same turns, full API content
+let busy = false;
+function addMsg(cls, html){
+  const d = document.createElement('div');
+  d.className = 'msg ' + cls; d.innerHTML = html;
+  $('chat').appendChild(d); $('chat').scrollTop = $('chat').scrollHeight;
+  return d;
+}
+function welcome(){
+  $('chat').innerHTML = '';
+  addMsg('bot', 'היי! אני <b>רובי</b> 🤖, הרובוט של מגמת האלקטרוניקה. אפשר לשאול אותי על חשמל, רכיבים, ESP32, ארדואינו, חיישנים ו-AI. מה תרצה לדעת?');
+}
+welcome();
+
+async function send(text){
+  text = text.trim();
+  if (!text || busy) return;
+  if (!ready()){ addMsg('err', '🔑 קודם צריך להדביק מפתח API למעלה וללחוץ "שמור".'); return; }
+  busy = true; $('send').disabled = true; $('q').value = '';
+  speechSynthesis.cancel();
+  addMsg('user', esc(text));
+  history.push({ role: 'user', content: text });
+  apiHistory.push({ role: 'user', content: text });
+  const bubble = addMsg('bot cursor', '');
+  setState('thinking', '🤔 חושב...');
+  try{
+    const { text: answer, content } = await askClaude({
+      system: SYSTEM, turns: history, apiTurns: apiHistory, effort: 'low',
+      onText: t => { bubble.innerHTML = fmt(t); $('chat').scrollTop = $('chat').scrollHeight; setState('thinking', '✍️ כותב...'); }
+    });
+    bubble.classList.remove('cursor');
+    history.push({ role: 'assistant', content: answer });
+    apiHistory.push({ role: 'assistant', content });
+    speak(answer);
+  }catch(e){
+    bubble.remove();
+    history.pop(); apiHistory.pop();
+    addMsg('err', errorText(e));
+    setState('idle', 'אופס, משהו השתבש 😕');
+  }
+  busy = false; $('send').disabled = false;
+}
+$('send').onclick = () => send($('q').value);
+$('q').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); send($('q').value); } });
+document.querySelectorAll('.chips button').forEach(b => b.onclick = () => send(b.textContent));
+$('newChat').onclick = () => { history = []; apiHistory = []; speechSynthesis.cancel(); welcome(); setState('idle', 'שיחה חדשה התחילה ✨'); };
+
+// ---------- microphone (speech to text) ----------
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SR){
+  const rec = new SR();
+  rec.lang = 'he-IL'; rec.interimResults = true;
+  let listening = false;
+  rec.onresult = e => {
+    const t = [...e.results].map(r => r[0].transcript).join('');
+    $('q').value = t;
+    if (e.results[e.results.length - 1].isFinal) send(t);
+  };
+  rec.onerror = e => { setState('idle', e.error === 'not-allowed' ? '🎤 אין גישה למיקרופון כאן. כתוב את השאלה.' : '🎤 לא שמעתי. נסה שוב.'); };
+  rec.onend = () => { listening = false; $('mic').classList.remove('rec'); };
+  $('mic').onclick = () => {
+    if (listening){ rec.stop(); return; }
+    speechSynthesis.cancel();
+    listening = true; $('mic').classList.add('rec');
+    setState('idle', '👂 מקשיב...');
+    try { rec.start(); } catch { listening = false; $('mic').classList.remove('rec'); setState('idle', '🎤 המיקרופון לא זמין כאן. כתוב את השאלה.'); }
+  };
+} else {
+  $('mic').onclick = () => setState('idle', '🎤 הדפדפן לא תומך בזיהוי דיבור. נסה ב-Chrome.');
+}
+
+// ---------- tabs ----------
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === b.dataset.tab));
+  if (b.dataset.tab === 'sensors') drawChart();
+});
+
+// ---------- sensor data ----------
+const SAMPLES = {
+  temp:    { name: 'טמפרטורה בכיתה מחיישן DHT11', unit: '°C', head: 'דקה,טמפרטורה',
+             gen: i => 23 + i * 0.06 + Math.sin(i / 5) * 0.4 + (Math.random() - .5) * 0.3 + (i === 37 ? 18 : 0) + (i > 48 ? 3 : 0) },
+  battery: { name: 'מתח סוללת ליתיום 2S של רובוט', unit: 'V', head: 'דקה,מתח',
+             gen: i => 8.4 - i * 0.022 - (i > 45 ? (i - 45) * 0.09 : 0) + (Math.random() - .5) * 0.03 },
+  light:   { name: 'חיישן אור LDR (ערך אנלוגי 0–4095) לאורך יום', unit: '', head: 'שעה,אור',
+             gen: i => Math.max(0, 3600 * Math.sin(Math.PI * (i / 59)) + (Math.random() - .5) * 150 - (i > 28 && i < 33 ? 2200 : 0)) },
+};
+function genData(){
+  const s = SAMPLES[$('sample').value];
+  const rows = [s.head];
+  for (let i = 0; i < 60; i++) rows.push(i + ',' + s.gen(i).toFixed(2));
+  $('csv').value = rows.join('\n');
+  drawChart();
+}
+function parse(){
+  return $('csv').value.split('\n').map(l => l.split(/[,;\t ]+/).map(Number))
+    .filter(r => r.length >= 2 && !isNaN(r[0]) && !isNaN(r[1])).map(r => ({ x: r[0], y: r[1] }));
+}
+function drawChart(){
+  const c = $('chart'), dpr = devicePixelRatio || 1;
+  c.width = c.clientWidth * dpr; c.height = c.clientHeight * dpr;
+  const g = c.getContext('2d'); g.scale(dpr, dpr);
+  const W = c.clientWidth, H = c.clientHeight, P = 34;
+  g.clearRect(0, 0, W, H);
+  const d = parse(); if (d.length < 2) return;
+  const xs = d.map(p => p.x), ys = d.map(p => p.y);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys) || 1;
+  const X = x => P + (x - x0) / (x1 - x0 || 1) * (W - 2 * P);
+  const Yp = y => H - P - (y - y0) / (y1 - y0 || 1) * (H - 2 * P);
+  g.strokeStyle = 'rgba(255,255,255,.08)'; g.fillStyle = '#98a3cc'; g.font = '11px Heebo';
+  for (let i = 0; i <= 4; i++){
+    const v = y0 + (y1 - y0) * i / 4, yy = Yp(v);
+    g.beginPath(); g.moveTo(P, yy); g.lineTo(W - P, yy); g.stroke();
+    g.fillText(v.toFixed(1), 2, yy + 4);
+  }
+  const grad = g.createLinearGradient(0, 0, W, 0);
+  grad.addColorStop(0, '#22d3ee'); grad.addColorStop(1, '#a78bfa');
+  g.beginPath(); d.forEach((p, i) => i ? g.lineTo(X(p.x), Yp(p.y)) : g.moveTo(X(p.x), Yp(p.y)));
+  g.strokeStyle = grad; g.lineWidth = 2.5; g.shadowColor = '#22d3ee'; g.shadowBlur = 10; g.stroke(); g.shadowBlur = 0;
+  const fill = g.createLinearGradient(0, P, 0, H - P);
+  fill.addColorStop(0, 'rgba(34,211,238,.25)'); fill.addColorStop(1, 'rgba(34,211,238,0)');
+  g.lineTo(X(d.at(-1).x), H - P); g.lineTo(X(d[0].x), H - P); g.closePath(); g.fillStyle = fill; g.fill();
+}
+$('genData').onclick = genData;
+$('sample').onchange = genData;
+$('csv').addEventListener('input', drawChart);
+addEventListener('resize', drawChart);
+genData();
+
+$('analyze').onclick = async () => {
+  if (!ready()){ $('analysis').textContent = '🔑 קודם צריך להדביק מפתח API למעלה וללחוץ "שמור".'; return; }
+  const s = SAMPLES[$('sample').value];
+  $('analyze').disabled = true;
+  $('analysis').className = 'cursor';
+  $('analysis').textContent = '';
+  setState('thinking', '🔍 מנתח את הנתונים...');
+  try{
+    const { text } = await askClaude({
+      system: SYSTEM + '\nכעת אתה מנתח נתוני חיישנים שתלמידים אספו.',
+      effort: 'medium',
+      turns: [{ role: 'user', content:
+        `הנה נתונים מ: ${s.name} (יחידות: ${s.unit || 'ערך גולמי'}).\n\n${$('csv').value}\n\n` +
+        `נתח בקצרה עם כותרות: 1) מה המגמה הכללית 2) חריגות או קפיצות חשודות ובאיזה זמן 3) האם זו כנראה תקלה בחיישן/חיווט או שינוי אמיתי 4) המלצה מעשית לתלמיד (חומרה או קוד).` }],
+      onText: t => { $('analysis').innerHTML = fmt(t); }
+    });
+    $('analysis').className = '';
+    speak(text.split('\n').slice(0, 6).join(' '));
+  }catch(e){
+    $('analysis').className = '';
+    $('analysis').textContent = errorText(e);
+    setState('idle', 'אופס, משהו השתבש 😕');
+  }
+  $('analyze').disabled = false;
+};
+</script>
+</body>
+</html>
