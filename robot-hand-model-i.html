@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>רובוט תנועות ידיים – מודל I</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400..800&amp;family=Assistant:wght@400;600;700&amp;display=swap">
+<style>
+:root {
+  --navy: #0B1220;
+  --navy2: #16223A;
+  --line: #2B3A55;
+  --paper: #F4F6FA;
+  --ink: #14213D;
+  --soft: #4A5568;
+  --mist: #BFD0E0;
+  --teal: #14B8A6;
+  --teal-d: #0F766E;
+  --amber: #F5A524;
+  --card: #FFFFFF;
+}
+
+body { font-family: 'Assistant', Arial, sans-serif; direction: rtl; text-align: right; }
+section { counter-increment: page; }
+h1, h2, h3 { font-family: 'Heebo', Arial, sans-serif; }
+
+/* slide backgrounds */
+.dark { background: #0B1220; color: #F4F6FA; padding: 128px 128px 160px; }
+.light { background: #F4F6FA; color: #14213D; padding: 128px 128px 160px; }
+.accent { background: #14B8A6; color: #0B1220; padding: 128px 128px 160px; }
+
+/* type scale: 104 / 72 / 44 / 32 / 26 */
+.eyebrow { font-size: 28px; font-weight: 700; color: #14B8A6; }
+.light .eyebrow { color: #0F766E; }
+.title { font-size: 72px; font-weight: 800; line-height: 1.1; }
+.lead { font-size: 32px; line-height: 1.4; }
+.dark .lead { color: #BFD0E0; }
+.light .lead { color: #4A5568; }
+
+/* footer band */
+.foot { position: absolute; left: 128px; bottom: 64px; width: 1664px; display: flex; justify-content: space-between; align-items: center; font-size: 24px; }
+.dark .foot { color: #8FA3BF; }
+.light .foot { color: #6B7280; }
+.foot .pg::after { content: counter(page); }
+
+/* logo: chip + bolt */
+.logo { display: flex; align-items: center; gap: 16px; }
+.logo svg { width: 64px; height: 64px; }
+
+/* cards */
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 32px; margin-top: 56px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 56px; }
+.card { background: #FFFFFF; border-radius: 24px; padding: 36px 40px; border-top: 8px solid #14B8A6; box-shadow: 0 8px 24px rgba(20,33,61,0.08); }
+.card h3 { font-size: 36px; font-weight: 700; color: #14213D; line-height: 1.2; }
+.card .txt { font-size: 28px; line-height: 1.35; color: #4A5568; margin-top: 12px; }
+.dcard { background: #16223A; border-radius: 24px; padding: 36px 40px; border-right: 8px solid #14B8A6; }
+.dcard h3 { font-size: 36px; font-weight: 700; color: #F4F6FA; line-height: 1.2; }
+.dcard .txt { font-size: 28px; line-height: 1.35; color: #BFD0E0; margin-top: 12px; }
+
+/* arrival motion */
+.rise { animation: rise 600ms cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--i, 0) * 120ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+.fadein { animation: fadein 700ms ease both; animation-delay: calc(var(--i, 0) * 140ms); }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+/* I model */
+.ibar { position: absolute; box-sizing: border-box; border-radius: 20px; padding: 22px 28px; }
+.ibar .letter { font-family: 'Heebo', Arial, sans-serif; font-size: 52px; font-weight: 800; line-height: 1; }
+.ibar .what { font-size: 26px; font-weight: 700; line-height: 1.25; margin-top: 8px; }
+.ib { background: #14B8A6; color: #0B1220; }
+.ic { background: #F5A524; color: #0B1220; }
+.ia { background: #2B3A55; color: #F4F6FA; }
+.id { background: #F4F6FA; color: #14213D; border: 4px solid #14B8A6; }
+.ibase { background: #16223A; color: #F4F6FA; border: 3px solid #14B8A6; }
+.ilist { position: absolute; display: flex; flex-direction: column; gap: 26px; }
+.irow h3 { font-size: 32px; font-weight: 700; color: #F4F6FA; }
+.irow .txt { font-size: 26px; color: #BFD0E0; margin-top: 4px; }
+.tag { font-weight: 800; }
+.tb { color: #14B8A6; }
+.tc { color: #F5A524; }
+.ta { color: #8FA3BF; }
+
+/* tables */
+.tbl { font-size: 30px; color: #14213D; margin-top: 48px; width: 1664px; }
+.dark .tbl { color: #F4F6FA; }
+
+/* stats */
+.stat { font-family: 'Heebo', Arial, sans-serif; font-size: 96px; font-weight: 800; line-height: 1; }
+.stat-l { font-size: 28px; margin-top: 12px; line-height: 1.35; }
+
+/* steps */
+.steps { display: flex; flex-direction: column; gap: 22px; }
+.step { display: flex; gap: 24px; align-items: flex-start; }
+.num { font-family: 'Heebo', Arial, sans-serif; font-size: 32px; font-weight: 800; background: #14B8A6; color: #0B1220; border-radius: 999px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; flex: none; }
+.step .stxt { font-size: 30px; line-height: 1.35; color: #F4F6FA; }
+
+/* ---- standalone viewer ---- */
+html, body { margin:0; height:100%; background:#05080F; overflow:hidden; }
+body * { margin:0; }
+#stage { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
+#deck { width:1920px; height:1080px; position:relative; transform-origin:center center; flex:none; }
+#deck > section { position:absolute; inset:0; width:1920px; height:1080px; box-sizing:border-box; overflow:hidden; display:none; }
+#deck > section.on { display:block; }
+section > aside { display:none; }
+x-shape { display:block; }
+x-icon { display:inline-block; }
+x-icon svg { width:100%; height:100%; display:block; }
+section .foot .pg::after { content: attr(data-n); }
+#deck .irow, #deck .ibar.id { flex-direction: row !important; }
+table.tbl { border-collapse:collapse; }
+table.tbl th, table.tbl td { padding:0.35em 0.6em; text-align:right; border-bottom:1px solid rgba(143,163,191,.35); }
+table.tbl th { font-weight:700; }
+#nav { position:fixed; bottom:14px; right:50%; transform:translateX(50%); display:flex; gap:10px; align-items:center;
+  font:600 14px Arial, sans-serif; color:#cbd5e1; background:rgba(15,23,42,.7); padding:6px 12px; border-radius:999px; z-index:10; }
+#nav button { background:#14B8A6; color:#0B1220; border:0; border-radius:999px; width:34px; height:34px; font-size:18px; cursor:pointer; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="deck">
+<section id="cover" class="dark" data-transition="fade">
+<div class="logo rise" style="--i:0">
+<svg viewBox="0 0 64 64" aria-label="לוגו: שבב עם ברק"><rect x="12" y="12" width="40" height="40" rx="6" fill="#14B8A6"/><g fill="#14B8A6"><rect x="18" y="4" width="4" height="8"/><rect x="30" y="4" width="4" height="8"/><rect x="42" y="4" width="4" height="8"/><rect x="18" y="52" width="4" height="8"/><rect x="30" y="52" width="4" height="8"/><rect x="42" y="52" width="4" height="8"/><rect x="4" y="18" width="8" height="4"/><rect x="4" y="30" width="8" height="4"/><rect x="4" y="42" width="8" height="4"/><rect x="52" y="18" width="8" height="4"/><rect x="52" y="30" width="8" height="4"/><rect x="52" y="42" width="8" height="4"/></g><path d="M35 17 L24 34 H31 L28 47 L40 29 H33 Z" fill="#0B1220"/></svg>
+<p class="eyebrow">מגמת הנדסת אלקטרוניקה ומחשבים</p>
+</div>
+<h1 class="rise" style="--i:1; font-size:104px; font-weight:800; line-height:1.08; margin-top:72px; width:1300px">רובוט תנועות ידיים עם בינה מלאכותית</h1>
+<p class="lead rise" style="--i:2; margin-top:32px; width:1300px">מצלמה ומודל AI, רובוט ESP32, ומסך ESP32-P4 עם ג׳ויסטיק, מוצגים לפי <b style="color:#14B8A6">מודל I</b></p>
+<div class="rise" style="--i:3; margin-top:72px; display:flex; gap:64px">
+<div><p style="font-size:24px; color:#8FA3BF">מפמ״ר</p><p style="font-size:30px; font-weight:700">שלומי אחנין</p></div>
+<div><p style="font-size:24px; color:#8FA3BF">הצוות</p><p style="font-size:30px; font-weight:700">מיחלייה עבד אלמגיד · יוחנן רושו · אירינה אוצ׳טל</p></div>
+</div>
+<x-shape kind="rect" style="position:absolute; left:128px; top:128px; width:16px; height:560px; background:#14B8A6; border-radius:8px"></x-shape>
+<x-shape kind="rect" style="position:absolute; left:88px; top:128px; width:96px; height:16px; background:#14B8A6; border-radius:8px"></x-shape>
+<x-shape kind="rect" style="position:absolute; left:88px; top:672px; width:96px; height:16px; background:#14B8A6; border-radius:8px"></x-shape>
+<div class="foot"><span>© Abed Mihilia</span><span class="pg"></span></div>
+<aside>פתיחה: מציגים את הרובוט שנשלט בתנועות ידיים, ואת מסך ה-P4 עם הג׳ויסטיק. לאורך המצגת נראה איך הידע בפרויקט מסודר לפי מודל I.</aside>
+</section>
+<section id="system" class="light">
+<p class="eyebrow">הפרויקט</p>
+<h2 class="title">ארבעה חלקים ושרת אחד שמחבר ביניהם</h2>
+<div class="card rise" style="--i:0; position:absolute; left:1352px; top:330px; width:440px; height:230px; box-sizing:border-box"><h3>מצלמה + AI</h3><p class="txt">מודל YOLO שאימנו מזהה תנועות יד בדפדפן</p></div>
+<div class="card rise" style="--i:1; position:absolute; left:740px; top:330px; width:440px; height:230px; box-sizing:border-box; border-top-color:#F5A524"><h3>שרת בענן (Render)</h3><p class="txt">מחליט מה הרובוט עושה, ומעביר וידאו ומצב</p></div>
+<div class="card rise" style="--i:2; position:absolute; left:128px; top:330px; width:440px; height:230px; box-sizing:border-box"><h3>רובוט ESP32</h3><p class="txt">מנועים, LCD, לדים, זמזם וחיישן טמפרטורה</p></div>
+<div class="card rise" style="--i:3; position:absolute; left:740px; top:650px; width:440px; height:230px; box-sizing:border-box"><h3>מסך ESP32-P4</h3><p class="txt">וידאו חי, מצב הרובוט ושליטה בג׳ויסטיק</p></div>
+<x-connector class="fadein" style="--i:4; color:#0F766E; border-width:4px" x1="1352" y1="445" x2="1180" y2="445" head="end"></x-connector>
+<x-connector class="fadein" style="--i:4; color:#0F766E; border-width:4px" x1="740" y1="445" x2="568" y2="445" head="both"></x-connector>
+<x-connector class="fadein" style="--i:4; color:#0F766E; border-width:4px" x1="960" y1="560" x2="960" y2="650" head="both"></x-connector>
+<div class="foot"><span>רובוט תנועות ידיים · מודל I</span><span class="pg"></span></div>
+<aside>המצלמה והמודל רצים בדפדפן ושולחים לשרת את התנועה שזוהתה. השרת מחליט על הפקודה. הרובוט מבקש פקודה ושולח טמפרטורה. מסך ה-P4 מציג את הווידאו ואת המצב, ומאפשר נהיגה בג׳ויסטיק.</aside>
+</section>
+<section id="imodel" class="dark" data-transition="fade">
+<p class="eyebrow">המסגרת הפדגוגית</p>
+<h2 class="title">מודל I: כך בנוי הידע בפרויקט</h2>
+<div class="ibar ib rise" style="--i:0; left:578px; top:270px; width:410px; height:150px"><p class="letter">B</p><p class="what">ידע ייחודי עם AI</p></div>
+<div class="ibar ic rise" style="--i:1; left:168px; top:270px; width:410px; height:150px; border-right:4px solid #0B1220"><p class="letter">C</p><p class="what">ידע מחוץ לתחום</p></div>
+<div class="ibar ia rise" style="--i:2; left:428px; top:420px; width:300px; height:190px"><p class="letter">A</p><p class="what">ידע בלי AI: יסודות האלקטרוניקה</p></div>
+<div class="ibar id rise" style="--i:3; left:428px; top:610px; width:300px; height:130px; display:flex; flex-direction:row-reverse; align-items:center; gap:18px; text-align:right"><p class="letter" style="color:#0F766E; flex:none">D</p><p class="what" style="margin-top:0">העמקה בתקשורת בין הרכבים</p></div>
+<div class="ibar ibase rise" style="--i:4; left:168px; top:740px; width:820px; height:140px"><p class="what" style="font-size:30px; margin-top:0">בסיס: אתיקה מקצועית · עבודה בפתיחות</p><p class="what" style="font-weight:400; color:#BFD0E0">הערכים שעליהם עומד כל הידע</p></div>
+<div class="ilist fadein" style="--i:5; left:1080px; top:280px; width:712px">
+<div class="irow" style="display:flex; flex-direction:row-reverse; gap:24px; align-items:flex-start"><div class="ia" style="width:64px; height:64px; border-radius:16px; flex:none; display:flex; align-items:center; justify-content:center"><p style="font-family:'Heebo', Arial, sans-serif; font-size:36px; font-weight:800">A</p></div><div style="flex:1; text-align:right"><h3>חיישנים, מעגלי בקרה ומנועים</h3><p class="txt">תכנון, הרכבה ומדידה במעבדה</p></div></div>
+<div class="irow" style="display:flex; flex-direction:row-reverse; gap:24px; align-items:flex-start"><div class="ib" style="width:64px; height:64px; border-radius:16px; flex:none; display:flex; align-items:center; justify-content:center"><p style="font-family:'Heebo', Arial, sans-serif; font-size:36px; font-weight:800">B</p></div><div style="flex:1; text-align:right"><h3>ענן, אינטרנט של הדברים וממשק</h3><p class="txt">שרת בענן, אפליקציה ומסך בעברית</p></div></div>
+<div class="irow" style="display:flex; flex-direction:row-reverse; gap:24px; align-items:flex-start"><div class="ic" style="width:64px; height:64px; border-radius:16px; flex:none; display:flex; align-items:center; justify-content:center"><p style="font-family:'Heebo', Arial, sans-serif; font-size:36px; font-weight:800">C</p></div><div style="flex:1; text-align:right"><h3>מודל AI: מכונה לומדת שאימנו התלמידים</h3><p class="txt">זיהוי תנועות ידיים בזמן אמת</p></div></div>
+<div class="irow" style="display:flex; flex-direction:row-reverse; gap:24px; align-items:flex-start"><div class="id" style="width:64px; height:64px; border-radius:16px; flex:none; display:flex; align-items:center; justify-content:center; box-sizing:border-box"><p style="font-family:'Heebo', Arial, sans-serif; font-size:36px; font-weight:800; color:#0F766E">D</p></div><div style="flex:1; text-align:right"><h3>העמקה בתקשורת בין הרכבים</h3><p class="txt">כתובות, יציאות, חוצצים ודחיפת זרם</p></div></div>
+<div class="irow" style="display:flex; flex-direction:row-reverse; gap:24px; align-items:flex-start"><div style="flex:1; text-align:right; margin-right:88px"><h3>הבסיס · אתיקה ופתיחות</h3><p class="txt">בטיחות, פרטיות, קרדיט ושיתוף</p></div></div>
+</div>
+<div class="foot"><span>רובוט תנועות ידיים · מודל I</span><span class="pg"></span></div>
+<aside>מודל I הוא המסגרת הפדגוגית של הפרויקט. A, יסודות האלקטרוניקה, הוא העמוד האמצעי. בחלק העליון: B, ידע ייחודי שנבנה בעזרת AI: ענן, אינטרנט של הדברים וממשק. ו-C, ידע מחוץ לתחום: מודל AI שהתלמידים אימנו. בתוך העמוד: D, העמקה בתקשורת בין הרכבים. בבסיס: אתיקה מקצועית ועבודה בפתיחות. בשקפים הבאים נראה כל חלק בפרויקט.</aside>
+</section>
+<section id="a-basics" class="light">
+<p class="eyebrow">A · ידע בלי AI</p>
+<h2 class="title">יסודות האלקטרוניקה שהרובוט בנוי עליהם</h2>
+<div class="grid3">
+<div class="card rise" style="--i:0"><h3>הרחבת יציאות I2C</h3><p class="txt">שמונה יציאות בקרה דרך שני חוטים בלבד</p></div>
+<div class="card rise" style="--i:1"><h3>חוצץ אותות</h3><p class="txt">התאמת האות בין הבקר לדוחף המנועים</p></div>
+<div class="card rise" style="--i:2"><h3>בקרת מנועים</h3><p class="txt">גשר H כפול: קדימה, אחורה, ימינה ושמאלה</p></div>
+<div class="card rise" style="--i:3"><h3>מיתוג בטרנזיסטור</h3><p class="txt">הפעלת זמזם התרעה בנסיעה לאחור</p></div>
+<div class="card rise" style="--i:4"><h3>תכנון הספק</h3><p class="txt">ספק מתאים ללדים ולמנועים, עם אדמה משותפת</p></div>
+<div class="card rise" style="--i:5"><h3>מדידה במעבדה</h3><p class="txt">עבודה עם מולטימטר לבדיקה ולאימות המעגל</p></div>
+</div>
+<div class="foot"><span>רובוט תנועות ידיים · מודל I</span><span class="pg"></span></div>
+<aside>החלק A הוא הידע ההנדסי הבסיסי, בלי AI: תכנון מעגלי בקרה, בקרת מנועים, מיתוג, תכנון הספק ומדידה במעבדה. על הבסיס הזה נבנה כל השאר.</aside>
+</section>
+<section id="d-deep" class="dark">
+<p class="eyebrow">D · העמקה</p>
+<h2 class="title">העמקה בתקשורת I2C ובבקרת זרם</h2>
+<div style="display:flex; gap:64px; margin-top:56px">
+<div class="steps" style="flex:1">
+<div class="step rise" style="--i:0"><p class="num">1</p><p class="stxt">אפיק I2C: בקר אחד מדבר עם כמה רכיבים על אותם שני חוטים</p></div>
+<div class="step rise" style="--i:1"><p class="num">2</p><p class="stxt">כתובות: כל רכיב מקבל כתובת משלו, שנקבעת בחיבור הרגליים</p></div>
+<div class="step rise" style="--i:2"><p class="num">3</p><p class="stxt">יציאות: למדנו איך היציאה מתנהגת ב-0 וב-1, ומה היא מסוגלת לספק</p></div>
+<div class="step rise" style="--i:3"><p class="num">4</p><p class="stxt">שרשרת הבקרה: בקר, מרחיב יציאות, חוצץ, דוחף ומנוע</p></div>
+</div>
+<div style="width:560px; display:flex; flex-direction:column; gap:28px">
+<div class="dcard fadein" style="--i:4"><h3>חקר במעבדה</h3><p class="txt">מדדנו את המתחים בכל שלב בשרשרת, וכך הבנו לעומק איך הרכיבים עובדים יחד.</p></div>
+<div class="dcard fadein" style="--i:5"><h3>מה התלמידים רכשו</h3><p class="txt">קריאת דפי נתונים, חשיבה מערכתית ואבחון הנדסי מבוסס מדידה.</p></div>
+</div>
+</div>
+<div class="foot"><span>רובוט תנועות ידיים · מודל I</span><span class="pg"></span></div>
+<aside>ההעמקה שבחרנו היא תקשורת I2C ובקרת זרם: איך בקר אחד שולט בכמה רכיבים, איך נקבעות כתובות, ואיך האות עובר דרך החוצץ והדוחף עד למנוע. התלמידים מדדו כל שלב במעבדה ולמדו לחשוב על המערכת כולה.</aside>
+</section>
+<section id="c-outside" class="dark">
+<p class="eyebrow">B · ידע ייחודי עם AI</p>
+<h2 class="title">מיומנויות מעבר לאלקטרוניקה</h2>
+<table class="tbl rise" style="--i:0">
+<tr><th style="width:32%">תחום</th><th style="width:68%">מה עשינו בפרויקט</th></tr>
+<tr><td>מחשוב ענן</td><td>שרת בענן שמחבר את המצלמה, הרובוט והמסך</td></tr>
+<tr><td>אינטרנט של הדברים</td><td>הרובוט והמסך מתקשרים דרך הרשת מכל מקום</td></tr>
+<tr><td>פיתוח אפליקציות</td><td>אפליקציה למסך ESP32-P4 עם וידאו חי וג׳ויסטיק</td></tr>
+<tr><td>ממשק משתמש</td><td>לוח בקרה באינטרנט ומסך בעברית</td></tr>
+<tr><td>ניהול פרויקט</td><td>תיעוד ושיתוף כל הקוד ב-GitHub</td></tr>
+</table>
+<div class="foot"><span>רובוט תנועות ידיים · מודל I</span><span class="pg"></span></div>
+<aside>החלק B: ידע ייחודי שנבנה בעזרת AI. הפרויקט חיבר את התלמידים לתחומים משיקים: מחשוב ענן, אינטרנט של הדברים, פיתוח אפליקציות, עיצוב ממשק משתמש וניהול פרויקט.</aside>
+</section>
+<section id="b-ai" class="light">
+<p class="eyebrow" style="color:#B45309">C · ידע מחוץ לתחום</p>
+<h2 class="title">בינה מלאכותית שהתלמידים בנו בעצמם</h2>
+<div class="grid3">
+<div class="card rise" style="--i:0"><h3>מודל זיהוי מקורי</h3><p class="txt">התלמידים אספו תמונות ואימנו מודל YOLO שמזהה ארבע תנועות יד</p></div>
+<div class="card rise" style="--i:1"><h3>AI בזמן אמת</h3><p class="txt">המודל רץ ישירות בדפדפן ומפעיל את הרובוט בתנועת יד</p></div>
+<div class="card rise" style="--i:2"><h3>החלטה חכמה</h3><p class="txt">הרובוט פועל רק כשהזיהוי יציב ובטוח, לנסיעה בטוחה ומדויקת</p></div>
+</div>
+<p class="lead rise" style="--i:3; margin-top:56px">יד פתוחה עוצרת את הרובוט, ויד פתוחה לאורך <b style="color:#0F766E">3 שניות</b> מחזירה אותו לאחור.</p>
+<div class="foot"><span>רובוט תנועות ידיים · מודל I</span><span class="pg"></span></div>
+<aside>החלק C הוא ידע מחוץ לתחום האלקטרוניקה: בינה מלאכותית. התלמידים אספו תמונות, אימנו מודל זיהוי בעצמם, והפעילו אותו בזמן אמת. הרובוט פועל רק כשהזיהוי יציב, וכך הנסיעה בטוחה ומדויקת.</aside>
+</section>
+<section id="base-ethics" class="light">
+<p class="eyebrow">הבסיס של ה-I</p>
+<h2 class="title">אתיקה מקצועית ועבודה בפתיחות</h2>
+<div class="grid2">
+<div class="card rise" style="--i:0"><h3>אתיקה מקצועית</h3>
+<p class="txt">• בטיחות: הרובוט עוצר לבד כשהקשר מתנתק</p>
+<p class="txt">• פרטיות: הווידאו נשאר במערכת שלנו בלבד</p>
+<p class="txt">• אבטחת מידע: גישה מוגנת בסיסמה</p>
+<p class="txt">• שימוש אחראי ומושכל בכלי AI</p></div>
+<div class="card rise" style="--i:1; border-top-color:#F5A524"><h3>עבודה בפתיחות</h3>
+<p class="txt">• קרדיט מלא לכלים ולקוד פתוח</p>
+<p class="txt">• תיעוד מסודר של כל שלבי הפיתוח</p>
+<p class="txt">• שיתוף ידע ועבודת צוות</p>
+<p class="txt">• למידה משותפת של תלמידים ומורים</p></div>
+</div>
+<div class="foot"><span>רובוט תנועות ידיים · מודל I</span><span class="pg"></span></div>
+<aside>הבסיס של ה-I הוא הערכים: בטיחות, פרטיות, אבטחת מידע ושימוש אחראי ב-AI, וגם עבודה בפתיחות: קרדיט, תיעוד, שיתוף ועבודת צוות.</aside>
+</section>
+<section id="gestures" class="dark">
+<p class="eyebrow">שימוש</p>
+<h2 class="title">איך שולטים ברובוט</h2>
+<table class="tbl rise" style="--i:0">
+<tr><th style="width:34%">מה עושים</th><th style="width:66%">מה הרובוט עושה</th></tr>
+<tr><td>אצבע קדימה</td><td>נוסע קדימה, לדים בכחול</td></tr>
+<tr><td>אצבע ימינה או שמאלה</td><td>פונה כל עוד היד מראה את הכיוון</td></tr>
+<tr><td>יד פתוחה</td><td>עוצר, לדים בלבן</td></tr>
+<tr><td>יד פתוחה 3 שניות</td><td>נוסע אחורה עם צפצוף, לדים באדום</td></tr>
+<tr><td>ג׳ויסטיק במסך ה-P4</td><td>מצב ידני לכל כיוון. START מחזיר לתנועות ידיים</td></tr>
+</table>
+<div class="foot"><span>רובוט תנועות ידיים · מודל I</span><span class="pg"></span></div>
+<aside>שתי דרכי שליטה: תנועות יד מול המצלמה, או ג׳ויסטיק שמחובר למסך ה-P4. עוזבים את הג׳ויסטיק והרובוט עוצר. לוחצים START וחוזרים לתנועות ידיים.</aside>
+</section>
+<section id="results" class="light">
+<p class="eyebrow">החדשנות בפרויקט</p>
+<h2 class="title">מה מייחד את הרובוט שלנו</h2>
+<div class="grid2" style="grid-template-columns:1fr 1fr 1fr 1fr; gap:32px">
+<div class="card rise" style="--i:0"><x-icon name="Lightbulb" style="width:64px; height:64px; color:#0F766E"></x-icon><h3 style="margin-top:20px">AI מקורי</h3><p class="txt">מודל זיהוי שהתלמידים אימנו בעצמם</p></div>
+<div class="card rise" style="--i:1"><x-icon name="Users" style="width:64px; height:64px; color:#0F766E"></x-icon><h3 style="margin-top:20px">שלוש דרכי שליטה</h3><p class="txt">תנועות ידיים, לוח בקרה בענן וג׳ויסטיק</p></div>
+<div class="card rise" style="--i:2"><x-icon name="Play" style="width:64px; height:64px; color:#0F766E"></x-icon><h3 style="margin-top:20px">תצוגה חיה</h3><p class="txt">וידאו ומצב הרובוט על מסך ESP32-P4 בעברית</p></div>
+<div class="card rise" style="--i:3"><x-icon name="Globe" style="width:64px; height:64px; color:#0F766E"></x-icon><h3 style="margin-top:20px">מערכת שלמה</h3><p class="txt">חומרה, תוכנה, בינה מלאכותית וענן בפרויקט אחד</p></div>
+</div>
+<div class="foot"><span>רובוט תנועות ידיים · מודל I</span><span class="pg"></span></div>
+<aside>מה מייחד את הפרויקט: מודל AI מקורי, שלוש דרכי שליטה, תצוגה חיה על מסך ESP32-P4 בעברית, ומערכת שלמה שמחברת חומרה, תוכנה, בינה מלאכותית וענן.</aside>
+</section>
+<section id="end" class="accent">
+<p class="eyebrow" style="color:#0B1220">סיכום</p>
+<h2 class="rise" style="--i:0; font-size:88px; font-weight:800; line-height:1.15; margin-top:48px; width:1500px">מיסודות האלקטרוניקה, דרך העמקה, ועד בינה מלאכותית, על בסיס של אתיקה ופתיחות</h2>
+<p class="lead rise" style="--i:1; margin-top:56px; color:#0B1220">מיחלייה עבד אלמגיד · יוחנן רושו · אירינה אוצ׳טל</p>
+<div class="foot" style="color:#0B1220"><span>מגמת הנדסת אלקטרוניקה ומחשבים</span><span class="pg"></span></div>
+<aside>לסיום: הפרויקט מראה את כל חלקי מודל I. יסודות בלי AI, העמקה בנושא אחד, ידע ייחודי עם AI וידע מתחומים אחרים, וכל זה על בסיס של אתיקה ופתיחות. תודה!</aside>
+</section>
+</div></div>
+<div id="nav"><button id="next" aria-label="הבא">&#8592;</button><span id="count" dir="ltr"></span><button id="prev" aria-label="הקודם">&#8594;</button></div>
+<div style="position:fixed;bottom:8px;left:8px;z-index:9999;padding:4px 10px;border-radius:999px;background:rgba(15,23,42,.75);color:#fff;font:600 12px/1.4 Arial,sans-serif;pointer-events:none">&copy; Abed Mihilia</div>
+<script>
+(function () {
+  var ICONS = {
+    Lightbulb: '<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/>',
+    Users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+    Play: '<polygon points="6 3 20 12 6 21 6 3"/>',
+    Globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/>'
+  };
+  document.querySelectorAll('x-icon').forEach(function (el) {
+    var p = ICONS[el.getAttribute('name')] || '<circle cx="12" cy="12" r="9"/>';
+    el.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>';
+  });
+  document.querySelectorAll('x-connector').forEach(function (el) {
+    var cs = el.getAttribute('style') || '', col = (cs.match(/color:\s*([^;]+)/) || [0, '#0F766E'])[1].trim();
+    var w = parseFloat((cs.match(/border-width:\s*([\d.]+)/) || [0, 2])[1]);
+    var x1 = +el.getAttribute('x1'), y1 = +el.getAttribute('y1'), x2 = +el.getAttribute('x2'), y2 = +el.getAttribute('y2');
+    var head = el.getAttribute('head') || 'end', id = 'm' + Math.random().toString(36).slice(2);
+    var svg = '<svg style="position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none;overflow:visible" viewBox="0 0 1920 1080">' +
+      '<defs><marker id="' + id + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">' +
+      '<path d="M0 0L10 5L0 10z" fill="' + col + '"/></marker></defs>' +
+      '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="' + col + '" stroke-width="' + w + '"' +
+      (head === 'end' || head === 'both' ? ' marker-end="url(#' + id + ')"' : '') +
+      (head === 'both' ? ' marker-start="url(#' + id + ')"' : '') + '/></svg>';
+    var wrap = document.createElement('div'); wrap.className = el.className; wrap.style.cssText = cs;
+    wrap.style.position = 'absolute'; wrap.style.left = '0'; wrap.style.top = '0'; wrap.innerHTML = svg;
+    el.replaceWith(wrap);
+  });
+  var deck = document.getElementById('deck'), S = [].slice.call(deck.children), cur = 0;
+  S.forEach(function (s, i) { s.querySelectorAll('.pg').forEach(function (p) { p.setAttribute('data-n', i + 1); }); });
+  function fit() { var k = Math.min(innerWidth / 1920, innerHeight / 1080); deck.style.transform = 'scale(' + k + ')'; }
+  function show(i) {
+    cur = Math.max(0, Math.min(S.length - 1, i));
+    S.forEach(function (s, j) { s.classList.toggle('on', j === cur); });
+    document.getElementById('count').textContent = (cur + 1) + ' / ' + S.length;
+    history.replaceState(null, '', '#' + (cur + 1));
+  }
+  addEventListener('resize', fit); fit();
+  addEventListener('keydown', function (e) {
+    if (['ArrowLeft', 'ArrowDown', 'PageDown', ' ', 'Enter'].indexOf(e.key) >= 0) { show(cur + 1); e.preventDefault(); }
+    if (['ArrowRight', 'ArrowUp', 'PageUp', 'Backspace'].indexOf(e.key) >= 0) { show(cur - 1); e.preventDefault(); }
+    if (e.key === 'Home') show(0); if (e.key === 'End') show(S.length - 1);
+  });
+  document.getElementById('next').onclick = function () { show(cur + 1); };
+  document.getElementById('prev').onclick = function () { show(cur - 1); };
+  var tx = null;
+  addEventListener('touchstart', function (e) { tx = e.touches[0].clientX; }, { passive: true });
+  addEventListener('touchend', function (e) {
+    if (tx === null) return; var dx = e.changedTouches[0].clientX - tx; tx = null;
+    if (Math.abs(dx) > 40) show(cur + (dx > 0 ? 1 : -1));
+  });
+  show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+})();
+</script>
+</body>
+</html>
